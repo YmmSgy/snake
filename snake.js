@@ -1,21 +1,36 @@
 const screen = document.getElementById("screen");
 const initxy = {x:4, y:4};
-let buffer = "";
+const buffer = {
+    tiles: "",
 
-function resetbuffer() {
-    buffer = "";
-    for (let y = 0; y < 10; ++y) {
-        for (let x = 0; x < 10; ++x) {
-            buffer += ".";
+    // flush buffer
+    flush: function() {
+        screen.innerHMTL = this.tiles;
+    },
+
+    // clear and fill buffer
+    fill: function(tile) {
+        for (let y = 0; y < 10; ++y) {
+            for (let x = 0; x < 10; ++x) {
+                this.tiles += tile;
+            }
+            this.tiles += "\n";
         }
-        buffer += "\n";
+    },
+
+    // count number of tiles
+    count: function() {
+        return this.tiles.length;
     }
-    screen.innerHTML = buffer;
-}
+};
+
 
 function turnactions() {
     
 }
 
-resetbuffer();
+
+buffer.fill(".");
+buffer.flush();
+alert(buffer.count());
 setInterval(turnactions, 1000);
