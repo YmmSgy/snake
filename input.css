@@ -1,0 +1,41 @@
+.dpad {
+  position: relative;
+  width: 200px;
+  height: 200px;
+}
+
+.dpad > .dpad_btn {
+  --btn-width: calc(100% / 3);
+  width: var(--btn-width);
+  height: var(--btn-width);
+}
+
+.dpad > .dpad_centre {
+  position: absolute;
+  top: calc(50% - var(--btn-width) / 2);
+  left: calc(50% - var(--btn-width) / 2);
+}
+
+.dpad > .dpad_up {
+  position: absolute;
+  top: 0;
+  left: calc(50% - var(--btn-width) / 2);
+}
+
+.dpad > .dpad_right {
+  position: absolute;
+  top: calc(50% - var(--btn-width) / 2);
+  right: 0;
+}
+
+.dpad > .dpad_down {
+  position: absolute;
+  bottom: 0;
+  left: calc(50% - var(--btn-width) / 2);
+}
+
+.dpad > .dpad_left {
+  position: absolute;
+  top: calc(50% - var(--btn-width) / 2);
+  left: 0;
+}

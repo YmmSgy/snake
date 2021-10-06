@@ -3,11 +3,19 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="input.css">
     <title>Snake</title>
   </head>
   <body>
+    <canvas id="screen" width="200" height="200">Your browser does not support canvas</canvas>
     <button type="button" id="btn">click me</button>
-    <div id="screen" style="white-space: pre; font-family: courier, monospace;"></div>
+    <div class="dpad">
+      <button id="dpad_centre" class="dpad_btn dpad_centre">●</button>
+      <button id="dpad_up" class="dpad_btn dpad_up">▲</button>
+      <button id="dpad_right" class="dpad_btn dpad_right">►</button>
+      <button id="dpad_down" class="dpad_btn dpad_down">▼</button>
+      <button id="dpad_left" class="dpad_btn dpad_left">◄</button>
+    </div>
     <script src="snake.js"></script>
   </body>
 </html>

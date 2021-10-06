@@ -7,14 +7,38 @@ function Cd(x, y) {
 }
 
 const screen = document.getElementById("screen");
+const ctx = screen.getContext("2d");
 const initxy = new Cd(4, 4);
 
 const buffer = {
+    // number of tiles in each dimension of the buffer
+    width: 10,
+    height: 10,
+    area: function() { return this.width * this.height; },
+
     tiles: [],
 
     // flush buffer
     flush: function() {
-        let src = this.tiles;
+        // define width of tile
+        const tilewidth = 20;
+
+        const src = this.tiles;
+
+        // for each tile
+        for (let x = 0; x < this.width; ++x) {
+            for (let y = 0; y < this.height; ++y) {
+                // change fill style based on the tile at each position
+                switch (src[this.width * y + x]) {
+                    case "O": ctx.fillStyle = "#ff0000"; break;
+                    default: ctx.fillStyle = "#000000";
+                }
+
+                ctx.fillRect(tilewidth * x, tilewidth * y, tilewidth, tilewidth);
+            }
+        }
+
+        /*
         let arr = [];
         // group 10 chars of src, then insert newline
         for (let i = 0; i < src.length; i += 10) {
@@ -25,12 +49,13 @@ const buffer = {
         }
         // join into full string, slicing out unnecessary newline at the end
         screen.innerHTML = arr.slice(0, arr.length - 1).join("");
+        */
     },
 
     // clear and fill buffer
     fill: function(tile) {
         this.tiles = [];
-        for (let i = 0; i < 100; ++i) {
+        for (let i = 0; i < this.area; ++i) {
             this.tiles.push(tile);
         }
     },
