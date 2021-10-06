@@ -53,30 +53,33 @@ const snake = {
             if (bodypart.x === cd.x && bodypart.y === cd.y) { flag = true; }
         }
         return flag;
-    },
-
-    move: function() {
-        // remove the tail (index 0) and add prevhead+dir to the head (index length-1)
-        const prevtail = this.body.shift();
-        const prevhead = this.body[this.body.length - 1];
-        const newhead = prevhead.add(this.dir);
-        this.body.push(newhead);
-
-        // clear screen and redraw whole snake
-        buffer.fill(".");
-        this.body.forEach((partcd) => buffer.settile(partcd, "O"));
-        buffer.flush();
-
-        console.log(this.body);
     }
 };
 
-function turnactions() {
-    // move the snake
-    snake.move();
+function wrap(cd) {
+    wrapint = (wraplen, i) => ((i % wraplen) + wraplen) % wraplen;
+    return new Cd(wrapint(10, cd.x), wrapint(10, cd.y));
 }
 
-buffer.fill(".");
-buffer.settile(initxy, "O");
-buffer.flush();
+function initactions() {
+    buffer.fill(".");
+    buffer.settile(initxy, "O");
+    buffer.flush();
+}
+
+function turnactions() {
+    // remove the tail (index 0) and add prevhead+dir to the head (index length-1)
+    const prevtail = snake.body.shift();
+    const prevhead = snake.body[snake.body.length - 1];
+    const newhead = wrap(prevhead.add(snake.dir));
+    snake.body.push(newhead);
+
+    // clear screen and redraw whole snake
+    buffer.fill(".");
+    snake.body.forEach((partcd) => buffer.settile(partcd, "O"));
+    buffer.flush();
+}
+
+initactions();
 document.getElementById("btn").onclick = turnactions;
+//setInterval(turnactions, 1000);
