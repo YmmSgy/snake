@@ -57,10 +57,9 @@ function Snake() {
 
     this.isInBody = function(cd) {
         let flag = false;
-        for (let i = 0; i < this.body.length; ++i) {
-            const bodypart = this.body[i];
-            if (bodypart.x === cd.x && bodypart.y === cd.y) { flag = true; }
-        }
+        this.body.forEach(function(bodypart) {
+            if (bodypart.isEqual(cd)) { flag = true; }
+        });
         return flag;
     };
 
@@ -81,19 +80,59 @@ function Snake() {
         }
     };
 
-    this.updateBody = function() {
-        // remove the tail (index 0) and add prevhead+dir to the head (index length-1)
-        const prevtail = this.body.shift();
+    this.snakeActions = function() {
+        // record the old head, and calculate newhead as prevhead+dir
         const prevhead = this.body[this.body.length - 1];
         const newhead = wrap(prevhead.add(this.dir));
+
+        // check if food will be eaten
+        const foodeaten = newhead.isEqual(food.pos);
+
+        // remove the tail (index 0) (unless food was eaten)
+        // and add the head (index length-1)
+        if (!foodeaten) this.body.shift();
         this.body.push(newhead);
+
+        // eat food, if any
+        if (foodeaten) food.foodActions();
+
+        // update old snake direction
+        this.prevdir = this.dir;
     };
+}
+
+function Food() {
+    this.pos = undefined;
+    this.safeforfood = undefined;
+
+    this.refreshsafetiles = function() {
+        this.safeforfood = [];
+        for (let x = 0; x < buffer.width; ++x) {
+            for (let y = 0; y < buffer.height; ++y) {
+                const newcd = new Cd(x, y);
+                if (!snake.isInBody(newcd)) this.safeforfood.push(new Cd(x, y));
+            }
+        }
+    }
+
+    this.foodActions = function() {
+        this.refreshsafetiles();
+
+        // create random number and corresponding coordinate
+        const rng = Math.floor(Math.random() * this.safeforfood.length);
+
+        this.pos = this.safeforfood[rng];
+    };
+
+    // initialize food
+    this.foodActions();
 }
 
 const screen = document.getElementById("screen");
 const ctx = screen.getContext("2d");
 const buffer = new Buffer(ctx);
 const snake = new Snake();
+const food = new Food();
 
 function wrap(cd) {
     wrapint = (wraplen, i) => ((i % wraplen) + wraplen) % wraplen;
@@ -107,16 +146,16 @@ function redraw() {
     // redraw whole snake
     snake.body.forEach((partcd) => buffer.settile(partcd, "#ff0000"));
 
+    // redraw food
+    buffer.settile(food.pos, "#00ff00");
+
     // flush buffer
     buffer.flush();
 }
 
 function turnactions() {
     // update the snake body
-    snake.updateBody();
-
-    // update old snake direction
-    snake.prevdir = snake.dir;
+    snake.snakeActions();
 
     // clear screen and redraw whole snake
     redraw();
@@ -130,5 +169,5 @@ document.getElementById("dpad_left").onclick = () => snake.changeDir("left");
 
 // start game
 redraw();
-document.getElementById("btn").onclick = turnactions;
-//setInterval(turnactions, 1000);
+//document.getElementById("btn").onclick = turnactions;
+setInterval(turnactions, 500);
