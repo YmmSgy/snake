@@ -1,9 +1,13 @@
 function Cd(x, y) {
     this.x = x;
     this.y = y;
-    this.toMonoCd = () => 10 * this.y + x;
+    this.toMonoCd = () => buffer.width * this.y + x;
     // vector addition
     this.add = (other) => new Cd(this.x + other.x, this.y + other.y);
+    // vector scale
+    this.scale = (factor) => new Cd(this.x * factor, this.y * factor);
+    // vector comparison
+    this.isEqual = (other) => this.x === other.x && this.y === other.y;
 }
 
 function Buffer(canvasCtx) {
@@ -49,6 +53,7 @@ function Snake() {
     this.body = [initxy, initxy];
 
     this.dir = new Cd(0, 1);
+    this.prevdir = new Cd(0, 0);
 
     this.isInBody = function(cd) {
         let flag = false;
@@ -57,6 +62,31 @@ function Snake() {
             if (bodypart.x === cd.x && bodypart.y === cd.y) { flag = true; }
         }
         return flag;
+    };
+
+    this.changeDir = function(newdirlabel) {
+        // convert newdirlabel to newdir direction coordinate
+        let newdir = undefined;
+        switch (newdirlabel) {
+            case "up": newdir = new Cd(0, -1); break;
+            case "right": newdir = new Cd(1, 0); break;
+            case "down": newdir = new Cd(0, 1); break;
+            case "left": newdir = new Cd(-1, 0); break;
+            default: console.log("switch failed: " + newdirlabel);
+        }
+
+        // change dir only if newdir is not parallel to prevdir
+        if (!newdir.isEqual(this.prevdir) && !newdir.isEqual(this.prevdir.scale(-1))) {
+            this.dir = newdir;
+        }
+    };
+
+    this.updateBody = function() {
+        // remove the tail (index 0) and add prevhead+dir to the head (index length-1)
+        const prevtail = this.body.shift();
+        const prevhead = this.body[this.body.length - 1];
+        const newhead = wrap(prevhead.add(this.dir));
+        this.body.push(newhead);
     };
 }
 
@@ -67,7 +97,7 @@ const snake = new Snake();
 
 function wrap(cd) {
     wrapint = (wraplen, i) => ((i % wraplen) + wraplen) % wraplen;
-    return new Cd(wrapint(10, cd.x), wrapint(10, cd.y));
+    return new Cd(wrapint(buffer.width, cd.x), wrapint(buffer.height, cd.y));
 }
 
 function redraw() {
@@ -82,16 +112,23 @@ function redraw() {
 }
 
 function turnactions() {
-    // remove the tail (index 0) and add prevhead+dir to the head (index length-1)
-    const prevtail = snake.body.shift();
-    const prevhead = snake.body[snake.body.length - 1];
-    const newhead = wrap(prevhead.add(snake.dir));
-    snake.body.push(newhead);
+    // update the snake body
+    snake.updateBody();
+
+    // update old snake direction
+    snake.prevdir = snake.dir;
 
     // clear screen and redraw whole snake
     redraw();
 }
 
+// bind dpad
+document.getElementById("dpad_up").onclick = () => snake.changeDir("up");
+document.getElementById("dpad_right").onclick = () => snake.changeDir("right");
+document.getElementById("dpad_down").onclick = () => snake.changeDir("down");
+document.getElementById("dpad_left").onclick = () => snake.changeDir("left");
+
+// start game
 redraw();
 document.getElementById("btn").onclick = turnactions;
 //setInterval(turnactions, 1000);
