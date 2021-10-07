@@ -21,17 +21,10 @@ function Buffer(canvasCtx) {
         // define width of tile
         const tilewidth = 20;
 
-        const src = this.tiles;
-
         // for each tile
         for (let x = 0; x < this.width; ++x) {
             for (let y = 0; y < this.height; ++y) {
-                // change fill style based on the tile at each position
-                switch (src[this.width * y + x]) {
-                    case "O": ctx.fillStyle = "#ff0000"; break;
-                    default: ctx.fillStyle = "#000000";
-                }
-
+                ctx.fillStyle = this.tiles[this.width * y + x];
                 ctx.fillRect(tilewidth * x, tilewidth * y, tilewidth, tilewidth);
             }
         }
@@ -40,7 +33,7 @@ function Buffer(canvasCtx) {
     // clear and fill buffer
     this.fill = function(tile) {
         this.tiles = [];
-        for (let i = 0; i < this.area; ++i) {
+        for (let i = 0; i < this.area(); ++i) {
             this.tiles.push(tile);
         }
     };
@@ -77,9 +70,14 @@ function wrap(cd) {
     return new Cd(wrapint(10, cd.x), wrapint(10, cd.y));
 }
 
-function initactions() {
-    buffer.fill(".");
-    buffer.settile(initxy, "O");
+function redraw() {
+    // clear screen
+    buffer.fill("#000000");
+
+    // redraw whole snake
+    snake.body.forEach((partcd) => buffer.settile(partcd, "#ff0000"));
+
+    // flush buffer
     buffer.flush();
 }
 
@@ -91,11 +89,9 @@ function turnactions() {
     snake.body.push(newhead);
 
     // clear screen and redraw whole snake
-    buffer.fill(".");
-    snake.body.forEach((partcd) => buffer.settile(partcd, "O"));
-    buffer.flush();
+    redraw();
 }
 
-initactions();
+redraw();
 document.getElementById("btn").onclick = turnactions;
 //setInterval(turnactions, 1000);
