@@ -6,20 +6,18 @@ function Cd(x, y) {
     this.add = (other) => new Cd(this.x + other.x, this.y + other.y);
 }
 
-const screen = document.getElementById("screen");
-const ctx = screen.getContext("2d");
-const initxy = new Cd(4, 4);
+function Buffer(canvasCtx) {
+    this.ctx = canvasCtx;
 
-const buffer = {
     // number of tiles in each dimension of the buffer
-    width: 10,
-    height: 10,
-    area: function() { return this.width * this.height; },
+    this.width = 10;
+    this.height = 10;
+    this.area = () => this.width * this.height;
 
-    tiles: [],
+    this.tiles = [];
 
     // flush buffer
-    flush: function() {
+    this.flush = function() {
         // define width of tile
         const tilewidth = 20;
 
@@ -37,49 +35,42 @@ const buffer = {
                 ctx.fillRect(tilewidth * x, tilewidth * y, tilewidth, tilewidth);
             }
         }
-
-        /*
-        let arr = [];
-        // group 10 chars of src, then insert newline
-        for (let i = 0; i < src.length; i += 10) {
-            // slice() returns a sub-array, join() converts to string, add this to arr
-            arr.push(src.slice(i, i + 10).join(""));
-            // add newline to arr
-            arr.push("\n");
-        }
-        // join into full string, slicing out unnecessary newline at the end
-        screen.innerHTML = arr.slice(0, arr.length - 1).join("");
-        */
-    },
+    };
 
     // clear and fill buffer
-    fill: function(tile) {
+    this.fill = function(tile) {
         this.tiles = [];
         for (let i = 0; i < this.area; ++i) {
             this.tiles.push(tile);
         }
-    },
+    };
 
     // set tile in buffer
-    settile: function(cd, tile) {
+    this.settile = function(cd, tile) {
         this.tiles[cd.toMonoCd()] = tile;
-    }
-};
+    };
+}
 
-const snake = {
-    body: [initxy, initxy],
+function Snake() {
+    const initxy = new Cd(4, 4);
+    this.body = [initxy, initxy];
 
-    dir: new Cd(0, 1),
+    this.dir = new Cd(0, 1);
 
-    isInBody: function(cd) {
+    this.isInBody = function(cd) {
         let flag = false;
         for (let i = 0; i < this.body.length; ++i) {
             const bodypart = this.body[i];
             if (bodypart.x === cd.x && bodypart.y === cd.y) { flag = true; }
         }
         return flag;
-    }
-};
+    };
+}
+
+const screen = document.getElementById("screen");
+const ctx = screen.getContext("2d");
+const buffer = new Buffer(ctx);
+const snake = new Snake();
 
 function wrap(cd) {
     wrapint = (wraplen, i) => ((i % wraplen) + wraplen) % wraplen;
