@@ -1,56 +1,53 @@
 function Cd(x, y) {
+    this.monoCd = buffer.width * y + x;
     this.x = x;
     this.y = y;
-    this.toMonoCd = () => buffer.width * this.y + x;
     // vector addition
     this.add = (other) => new Cd(this.x + other.x, this.y + other.y);
     // vector scale
     this.scale = (factor) => new Cd(this.x * factor, this.y * factor);
     // vector comparison
-    this.isEqual = (other) => this.x === other.x && this.y === other.y;
+    this.isEqual = (other) => this.monoCd === other.monoCd;
+    // static method to convert monocoordinate to Cd
+    Cd.fromMonoCd = (monocd) => new Cd(monocd % buffer.width, Math.floor(monocd / buffer.width));
 }
 
-function Buffer(canvasCtx) {
-    this.ctx = canvasCtx;
-
+// contains drawing instructions for every tile in tilePainters
+function Buffer() {
     // number of tiles in each dimension of the buffer
-    this.width = 10;
-    this.height = 10;
-    this.area = () => this.width * this.height;
+    this.width = 4;
+    this.height = 4;
+    this.area = this.width * this.height;
 
-    this.tiles = [];
+    // width in pixels of each tile
+    this.tilewidth = 20;
 
-    // flush buffer
+    this.tilePainters = [];
+
+    // execute all drawing instructions in buffer
     this.flush = function() {
-        // define width of tile
-        const tilewidth = 20;
-
-        // for each tile
-        for (let x = 0; x < this.width; ++x) {
-            for (let y = 0; y < this.height; ++y) {
-                ctx.fillStyle = this.tiles[this.width * y + x];
-                ctx.fillRect(tilewidth * x, tilewidth * y, tilewidth, tilewidth);
-            }
+        for (let i = 0; i < this.tilePainters.length; ++i) {
+            this.tilePainters[i](Cd.fromMonoCd(i));
         }
     };
 
-    // clear and fill buffer
-    this.fill = function(tile) {
-        this.tiles = [];
-        for (let i = 0; i < this.area(); ++i) {
-            this.tiles.push(tile);
+    // clear and fill buffer with a single drawing instruction
+    this.fill = function(painter) {
+        this.tilePainters = [];
+        for (let i = 0; i < this.area; ++i) {
+            this.tilePainters.push(painter);
         }
     };
 
-    // set tile in buffer
-    this.settile = function(cd, tile) {
-        this.tiles[cd.toMonoCd()] = tile;
+    // set drawing instructions for a tile in buffer
+    this.settile = function(cd, painter) {
+        this.tilePainters[cd.monoCd] = painter;
     };
 }
 
 function Snake() {
-    const initxy = new Cd(4, 4);
-    this.body = [initxy, initxy];
+    const initcd = new Cd(Math.floor(buffer.width / 2), Math.floor(buffer.height / 2));
+    this.body = [initcd, initcd];
 
     this.dir = new Cd(0, 1);
     this.prevdir = new Cd(0, 0);
@@ -79,58 +76,30 @@ function Snake() {
             this.dir = newdir;
         }
     };
-
-    this.snakeActions = function() {
-        // record the old head, and calculate newhead as prevhead+dir
-        const prevhead = this.body[this.body.length - 1];
-        const newhead = wrap(prevhead.add(this.dir));
-
-        // check if food will be eaten
-        const foodeaten = newhead.isEqual(food.pos);
-
-        // remove the tail (index 0) (unless food was eaten)
-        // and add the head (index length-1)
-        if (!foodeaten) this.body.shift();
-        this.body.push(newhead);
-
-        // eat food, if any
-        if (foodeaten) food.foodActions();
-
-        // update old snake direction
-        this.prevdir = this.dir;
-    };
 }
 
 function Food() {
     this.pos = undefined;
-    this.safeforfood = undefined;
 
-    this.refreshsafetiles = function() {
-        this.safeforfood = [];
-        for (let x = 0; x < buffer.width; ++x) {
-            for (let y = 0; y < buffer.height; ++y) {
-                const newcd = new Cd(x, y);
-                if (!snake.isInBody(newcd)) this.safeforfood.push(new Cd(x, y));
-            }
+    // creates new food at random position
+    this.createFood = function() {
+        // build array of possible food tiles
+        const safeforfood = [];
+        for (let i = 0; i < buffer.area; ++i) {
+            const newcd = Cd.fromMonoCd(i);
+            if (!snake.isInBody(newcd)) safeforfood.push(newcd);
         }
-    }
 
-    this.foodActions = function() {
-        this.refreshsafetiles();
+        // create random number
+        const rng = Math.floor(Math.random() * safeforfood.length);
 
-        // create random number and corresponding coordinate
-        const rng = Math.floor(Math.random() * this.safeforfood.length);
-
-        this.pos = this.safeforfood[rng];
+        this.pos = safeforfood[rng];
     };
-
-    // initialize food
-    this.foodActions();
 }
 
 const screen = document.getElementById("screen");
 const ctx = screen.getContext("2d");
-const buffer = new Buffer(ctx);
+const buffer = new Buffer();
 const snake = new Snake();
 const food = new Food();
 
@@ -139,23 +108,67 @@ function wrap(cd) {
     return new Cd(wrapint(buffer.width, cd.x), wrapint(buffer.height, cd.y));
 }
 
+// paints background
+function paintBackground(cd) {
+    ctx.fillStyle = "#000000";
+    const w = buffer.tilewidth;
+    ctx.fillRect(cd.x * w, cd.y * w, w, w);
+}
+
+// paints snake body
+function paintBody(cd) {
+    paintBackground(cd);
+    ctx.fillStyle = "#ff0000";
+    const w = buffer.tilewidth;
+    ctx.beginPath();
+    ctx.arc(cd.x * w + w / 2, cd.y * w + w / 2, w / 2, 0, 2 * Math.PI);
+    ctx.fill();
+}
+
+// paints food
+function paintFood(cd) {
+    paintBackground(cd);
+    ctx.fillStyle = "#00ff00";
+    const w = buffer.tilewidth;
+    ctx.beginPath();
+    ctx.arc(cd.x * w + w / 2, cd.y * w + w / 2, w / 2, 0, 2 * Math.PI);
+    ctx.fill();
+}
+
 function redraw() {
     // clear screen
-    buffer.fill("#000000");
+    buffer.fill(paintBackground);
 
     // redraw whole snake
-    snake.body.forEach((partcd) => buffer.settile(partcd, "#ff0000"));
+    snake.body.forEach(function(partcd) {
+        buffer.settile(partcd, paintBody);
+    });
 
     // redraw food
-    buffer.settile(food.pos, "#00ff00");
+    buffer.settile(food.pos, paintFood);
 
     // flush buffer
     buffer.flush();
 }
 
 function turnactions() {
-    // update the snake body
-    snake.snakeActions();
+    // record the old head, and calculate newhead as prevhead+dir
+    const prevhead = snake.body[snake.body.length - 1];
+    const newhead = wrap(prevhead.add(snake.dir));
+
+    // check if food will be eaten
+    const foodeaten = newhead.isEqual(food.pos);
+
+    // remove the tail (index 0), unless food was eaten
+    // and add the head (index length-1)
+    if (!foodeaten) snake.body.shift();
+    snake.body.push(newhead);
+
+    // update old snake direction
+    snake.prevdir = snake.dir;
+
+    // create new food, if food was eaten
+    if (foodeaten) food.createFood();
 
     // clear screen and redraw whole snake
     redraw();
@@ -168,6 +181,7 @@ document.getElementById("dpad_down").onclick = () => snake.changeDir("down");
 document.getElementById("dpad_left").onclick = () => snake.changeDir("left");
 
 // start game
+food.createFood();
 redraw();
-//document.getElementById("btn").onclick = turnactions;
-setInterval(turnactions, 500);
+document.getElementById("btn").onclick = turnactions;
+//setInterval(turnactions, 500);
