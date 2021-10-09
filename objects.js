@@ -88,8 +88,8 @@ function Snake(initlen, initdir) {
             }
         })();
 
-        // change dir only if newdir is not parallel to prevdir
-        if (!newdir.isEqual(this.prevdir) && !newdir.isEqual(this.prevdir.scale(-1))) {
+        // change dir only if newdir is not opposite of prevdir
+        if (!newdir.isEqual(this.prevdir.scale(-1))) {
             this.dir = newdir;
         }
     };
