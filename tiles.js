@@ -33,6 +33,11 @@ function paintFood(cd) {
     ctx.fill();
 }
 
+function resizescr(width, height) {
+    screen.width = width;
+    screen.height = height;
+}
+
 function redraw() {
     // clear screen
     Buffer.main.fill(paintBackground);

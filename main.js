@@ -1,13 +1,15 @@
 "use strict";
 
-const buffer = new Buffer(4, 4, 20);
-const snake = new Snake(2, "down");
-const food = new Food();
-
 function turnactions() {
-    // record the old head, and calculate newhead as prevhead+dir
+    // calculate newhead as prevhead+dir
     const prevhead = snake.body[snake.body.length - 1];
     const newhead = Cd.wrap(prevhead.add(snake.dir));
+
+    // check if new head is inside snake.body minus the tail
+    if (snake.isInBody(newhead) && !newhead.isEqual(snake.body[0])) {
+        endgame();
+        return;
+    }
 
     // check if food will be eaten
     const foodeaten = newhead.isEqual(food.pos);
@@ -20,20 +22,58 @@ function turnactions() {
     // update old snake direction
     snake.prevdir = snake.dir;
 
-    // create new food, if food was eaten
-    if (foodeaten) food.createFood();
+    // if food was eaten, create new food and increment score
+    if (foodeaten) {
+        food.createFood();
+        ++score;
+    }
 
     // clear screen and redraw whole snake
     redraw();
 }
 
-// bind dpad
-document.getElementById("dpad_up").onclick = () => snake.changeDir("up");
-document.getElementById("dpad_right").onclick = () => snake.changeDir("right");
-document.getElementById("dpad_down").onclick = () => snake.changeDir("down");
-document.getElementById("dpad_left").onclick = () => snake.changeDir("left");
+function startgame() {
+    // initialize new game objects
+    buffer = new Buffer(vtilesnum, htilesnum, tilewidth);
+    snake = new Snake(initsnakelen, initdir);
+    food = new Food();
+    score = 0;
 
-// start game
-redraw();
-document.getElementById("btn").onclick = turnactions;
-//setInterval(turnactions, 500);
+    // resize screen and render it
+    resizescr(htilesnum * tilewidth, vtilesnum * tilewidth);
+    redraw();
+
+    // start turn based system and timer
+    timer = setInterval(turnactions, 500);
+}
+
+function endgame() {
+    clearInterval(timer);
+    console.log("game over! score: " + score);
+}
+
+// MAIN
+
+// globals
+const vtilesnum = 20;
+const htilesnum = 20;
+const tilewidth = 20;
+const initsnakelen = 2;
+const initdir = "down";
+
+const dpad = {
+    up: document.getElementById("dpad_up"),
+    right: document.getElementById("dpad_right"),
+    down: document.getElementById("dpad_down"),
+    left: document.getElementById("dpad_left")
+};
+
+let buffer, snake, food, timer, score;
+
+// bind dpad
+dpad.up.addEventListener("click", () => snake.changeDir("up"));
+dpad.right.addEventListener("click", () => snake.changeDir("right"));
+dpad.down.addEventListener("click", () => snake.changeDir("down"));
+dpad.left.addEventListener("click", () => snake.changeDir("left"));
+
+startgame();

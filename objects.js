@@ -1,6 +1,5 @@
 "use strict";
 
-// contains drawing instructions for every tile in tilePainters
 function Buffer(width, height, tilewidth) {
     // singleton pattern for the screen
     Buffer.main = this;
@@ -13,26 +12,27 @@ function Buffer(width, height, tilewidth) {
     // width in pixels of each tile
     this.tilewidth = tilewidth;
 
-    this.tilePainters = [];
+    // contains drawing instructions for every tile
+    this.tilepainters = [];
 
     // execute all drawing instructions in buffer
     this.flush = function() {
-        for (let i = 0; i < this.tilePainters.length; ++i) {
-            this.tilePainters[i](Cd.fromMonoCd(i));
+        for (let i = 0; i < this.tilepainters.length; ++i) {
+            this.tilepainters[i](Cd.fromMonoCd(i));
         }
     };
 
     // clear and fill buffer with a drawing instruction
     this.fill = function(painter) {
-        this.tilePainters = [];
+        this.tilepainters = [];
         for (let i = 0; i < this.area; ++i) {
-            this.tilePainters.push(painter);
+            this.tilepainters.push(painter);
         }
     };
 
     // set drawing instructions for a tile in buffer
     this.settile = function(cd, painter) {
-        this.tilePainters[cd.monoCd] = painter;
+        this.tilepainters[cd.monoCd] = painter;
     };
 }
 
