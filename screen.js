@@ -46,11 +46,11 @@ function Cd(x, y) {
     this.scale = (factor) => new Cd(this.x * factor, this.y * factor);
     // vector comparison
     this.isEqual = (other) => this.monoCd === other.monoCd;
+    // method to wrap coordinates to within the buffer
+    this.wrap = function() {
+        const wrapint = (wraplen, i) => ((i % wraplen) + wraplen) % wraplen;
+        return new Cd(wrapint(Buffer.main.width, this.x), wrapint(Buffer.main.height, this.y));
+    };
     // static method to convert monocoordinate to Cd
     Cd.fromMonoCd = (monocd) => new Cd(monocd % Buffer.main.width, Math.floor(monocd / Buffer.main.width));
-    // static method to wrap coordinates to within the buffer
-    Cd.wrap = function(cd) {
-        const wrapint = (wraplen, i) => ((i % wraplen) + wraplen) % wraplen;
-        return new Cd(wrapint(Buffer.main.width, cd.x), wrapint(Buffer.main.height, cd.y));
-    }
 }

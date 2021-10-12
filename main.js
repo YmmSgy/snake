@@ -3,7 +3,7 @@
 function turnactions() {
     // calculate newhead as prevhead+dir
     const prevhead = snake.body[snake.body.length - 1];
-    const newhead = Cd.wrap(prevhead.add(snake.dir));
+    const newhead = prevhead.add(snake.dir).wrap();
 
     // check if new head is inside snake.body minus the tail
     if (snake.isInBody(newhead) && !newhead.isEqual(snake.body[0])) {
