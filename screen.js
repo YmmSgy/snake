@@ -36,6 +36,34 @@ function Buffer(width, height, tilewidth) {
     };
 }
 
+// contains a pipeline of shaders to draw tiles on the canvas
+function Window(origin, width, height) {
+	let pipeline = [];
+
+	this.origin = origin;
+	this.width = width;
+	this.height = height;
+
+	// draw the window based on the stored pipeline
+	this.flush = function() {
+		pipeline.forEach(function(value) {
+			value();
+		});
+		// reset pipeline after execution
+		pipeline = [];
+	};
+
+	// add shader at local coordinate to the window's pipeline
+	this.add = function(cd, id) {
+		
+	};
+
+	// fill the window with shader
+	this.fill = function(id) {
+		
+	};
+}
+
 function Cd(x, y) {
     this.monoCd = Buffer.main.width * y + x;
     this.x = x;
