@@ -62,23 +62,37 @@ function Window(origin, width, height) {
 	this.fill = function(id) {
 		
 	};
+
+	// wraps a local coordinate into a coordinate within the window
+	this.wrap = function(cd) {
+		const wrapint = (i, len) => ((i % len) + len) % len;
+		return new Cd(wrapint(cd.x, width), wrapint(cd.y, height));
+	};
 }
 
 function Cd(x, y) {
-    this.monoCd = Buffer.main.width * y + x;
+    this.monoCd = Buffer.main.width * y + x; 
     this.x = x;
     this.y = y;
+
     // vector addition
-    this.add = (other) => new Cd(this.x + other.x, this.y + other.y);
+    this.add = (other) => new Cd(x + other.x, y + other.y);
+
     // vector scale
-    this.scale = (factor) => new Cd(this.x * factor, this.y * factor);
+    this.scale = (factor) => new Cd(x * factor, y * factor);
+
     // vector comparison
-    this.isEqual = (other) => this.monoCd === other.monoCd;
+	this.isEqual = (other) => x === other.x && y === other.y;
+
     // method to wrap coordinates to within the buffer
-    this.wrap = function() {
+    this.wrap = function() { 
         const wrapint = (wraplen, i) => ((i % wraplen) + wraplen) % wraplen;
-        return new Cd(wrapint(Buffer.main.width, this.x), wrapint(Buffer.main.height, this.y));
+        return new Cd(wrapint(Buffer.main.width, x), wrapint(Buffer.main.height, y));
     };
+
     // static method to convert monocoordinate to Cd
-    Cd.fromMonoCd = (monocd) => new Cd(monocd % Buffer.main.width, Math.floor(monocd / Buffer.main.width));
+    Cd.fromMonoCd = (monocd) => new Cd(monocd % Buffer.main.width, Math.floor(monocd / Buffer.main.width)); 
+
+    Cd.frommono = (mono, w) => new Cd(mono % w, Math.floor(mono / w)); 
+    Cd.tomono = (cd, w) => w * cd.y + cd.x; 
 }
