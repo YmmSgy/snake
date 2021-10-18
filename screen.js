@@ -124,6 +124,8 @@ function Shader(wcd, id) {
 	Shader.ctx.drawImage(Shader.spritemap, _pcd.x, _pcd.y, _sw, _sw, wcd.x * _w, wcd.y * _w, _w, _w);
 }
 
+Cd.frommono = (mono, w) => new Cd(mono % w, Math.floor(mono / w));
+Cd.tomono = (cd, w) => w * cd.y + cd.x;
 function Cd(x, y) {
     this.monoCd = Buffer.main.width * y + x;  
     this.x = x;
@@ -146,7 +148,4 @@ function Cd(x, y) {
 
     // static method to convert monocoordinate to Cd
     Cd.fromMonoCd = (monocd) => new Cd(monocd % Buffer.main.width, Math.floor(monocd / Buffer.main.width)); 
-
-    Cd.frommono = (mono, w) => new Cd(mono % w, Math.floor(mono / w)); 
-    Cd.tomono = (cd, w) => w * cd.y + cd.x; 
 }

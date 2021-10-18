@@ -23,15 +23,16 @@ function Snake(initlen, initdir) {
     // change current direction to newdirlabel
     this.changeDir = function(newdirlabel) {
         // convert newdirlabel to newdir direction coordinate
-        const newdir = (function() {
+        function getnewdir() {
             switch (newdirlabel) {
                 case "up": return new Cd(0, -1);
                 case "right": return new Cd(1, 0);
                 case "down": return new Cd(0, 1);
                 case "left": return new Cd(-1, 0);
-                default: console.log("switch failed: " + newdirlabel);
+                default: console.log(`direction label "${newdirlabel}" does not exist`);
             }
-        })();
+        }
+        const newdir = getnewdir();
 
         // change dir only if newdir is not opposite of prevdir
         if (!newdir.isEqual(this.prevdir.scale(-1))) {
