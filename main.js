@@ -39,8 +39,7 @@ function startgame() {
     food = new Food();
     score = 0;
 
-    // resize screen and render it
-    resizescr(htilesnum * tilewidth, vtilesnum * tilewidth);
+    // render screen
     redraw();
 
     // start turn based system and timer
@@ -57,7 +56,8 @@ function endgame() {
 // globals
 const vtilesnum = 20;
 const htilesnum = 20;
-const tilewidth = 20;
+const tileheight = Math.floor(Shader.canvas.height / vtilesnum);
+const tilewidth = Math.floor(Shader.canvas.width / htilesnum);
 const initsnakelen = 2;
 const initdir = "down";
 
