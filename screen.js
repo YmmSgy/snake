@@ -1,6 +1,6 @@
 "use strict";
 
-function Buffer(width, height, tilewidth) {
+function Buffer(width, height, tilewidth) {  
     // singleton pattern for the screen
     Buffer.main = this;
 
@@ -42,7 +42,7 @@ function Window(origin, width, height) {
 	let pipeline = [];
 
 	// checks if coordinate is within the window
-	const withinwin = (cd) => 0 <= cd.x && cd.x < width && 0 <= cd.y && cd.y < height;
+	const _withinwin = (cd) => 0 <= cd.x && cd.x < width && 0 <= cd.y && cd.y < height;
 
 	this.origin = origin;
 	this.width = width;
@@ -60,7 +60,7 @@ function Window(origin, width, height) {
 /*	// add shader at local coordinate to the window's pipeline
 	this.add = function(cd, id) {
 		// do bounds check for cd
-		if (!withinwin(cd)) {
+		if (!_withinwin(cd)) {
 			console.log("writing to a coordinate outside of window!");
 			return;
 		}
@@ -101,8 +101,30 @@ function Window(origin, width, height) {
 	};
 }
 
+/*
+Shader.tilewidth = 20;
+Shader.spritewidth = 16;
+Shader.ctx = 
+Shader.spritemap = 
+function Shader(wcd, id) {
+	const _sw = Shader.spritewidth;
+	const _w = Shader.tilewidth;
+	// translates given shader keyword to pixel coordinates of the sprite
+	const _pcd = (function() {
+		switch (id) {
+			case "s": const c = new Cd(0, 0); return c.scale(_sw);
+			case "f": const c = new Cd(1, 0); return c.scale(_sw);
+			case "bg": const c = new Cd(2, 0); return c.scale(_sw);
+			case "bn": const c = new Cd(3, 0); return c.scale(_sw);
+			default: console.log(`sprite "${id}" not found!`);
+		}
+	})();
+	// draw the sprite on the canvas
+	Shader.ctx.drawImage(Shader.spritemap, _pcd.x, _pcd.y, _sw, _sw, wcd.x * _w, wcd.y * _w, _w, _w);
+} */
+
 function Cd(x, y) {
-    this.monoCd = Buffer.main.width * y + x; 
+    this.monoCd = Buffer.main.width * y + x;  
     this.x = x;
     this.y = y;
 
@@ -116,7 +138,7 @@ function Cd(x, y) {
 	this.isEqual = (other) => x === other.x && y === other.y;
 
     // method to wrap coordinates to within the buffer
-    this.wrap = function() { 
+    this.wrap = function() {  
         const wrapint = (wraplen, i) => ((i % wraplen) + wraplen) % wraplen;
         return new Cd(wrapint(Buffer.main.width, x), wrapint(Buffer.main.height, y));
     };
