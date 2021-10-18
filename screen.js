@@ -101,27 +101,28 @@ function Window(origin, width, height) {
 	};
 }
 
-/*
 Shader.tilewidth = 20;
 Shader.spritewidth = 16;
-Shader.ctx = 
-Shader.spritemap = 
+Shader.canvas = document.getElementById("screen");
+Shader.ctx = Shader.canvas.getContext("2d");
+Shader.spritemap = document.getElementById("spritemap");
 function Shader(wcd, id) {
 	const _sw = Shader.spritewidth;
 	const _w = Shader.tilewidth;
 	// translates given shader keyword to pixel coordinates of the sprite
 	const _pcd = (function() {
+		let c;
 		switch (id) {
-			case "s": const c = new Cd(0, 0); return c.scale(_sw);
-			case "f": const c = new Cd(1, 0); return c.scale(_sw);
-			case "bg": const c = new Cd(2, 0); return c.scale(_sw);
-			case "bn": const c = new Cd(3, 0); return c.scale(_sw);
+			case "s": c = new Cd(0, 0); return c.scale(_sw);
+			case "f": c = new Cd(1, 0); return c.scale(_sw);
+			case "bg": c = new Cd(2, 0); return c.scale(_sw);
+			case "bn": c = new Cd(3, 0); return c.scale(_sw);
 			default: console.log(`sprite "${id}" not found!`);
 		}
 	})();
 	// draw the sprite on the canvas
 	Shader.ctx.drawImage(Shader.spritemap, _pcd.x, _pcd.y, _sw, _sw, wcd.x * _w, wcd.y * _w, _w, _w);
-} */
+}
 
 function Cd(x, y) {
     this.monoCd = Buffer.main.width * y + x;  
