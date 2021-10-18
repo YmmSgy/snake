@@ -38,7 +38,11 @@ function Buffer(width, height, tilewidth) {
 
 // contains a pipeline of shaders to draw tiles on the canvas
 function Window(origin, width, height) {
+	// holds the shader pipeline
 	let pipeline = [];
+
+	// checks if coordinate is within the window
+	const withinwin = (cd) => 0 <= cd.x && cd.x < width && 0 <= cd.y && cd.y < height;
 
 	this.origin = origin;
 	this.width = width;
@@ -53,15 +57,42 @@ function Window(origin, width, height) {
 		pipeline = [];
 	};
 
-	// add shader at local coordinate to the window's pipeline
+/*	// add shader at local coordinate to the window's pipeline
 	this.add = function(cd, id) {
-		
-	};
+		// do bounds check for cd
+		if (!withinwin(cd)) {
+			console.log("writing to a coordinate outside of window!");
+			return;
+		}
+		// convert cd to world coordinate
+		const wcd = origin.add(cd);
 
-	// fill the window with shader
+		// create shader from world coordinate and id
+		const s = some function... 
+
+		// add the shader to the pipeline
+		pipeline.push(s);
+	}; */
+
+/*	// fill the window with shader
 	this.fill = function(id) {
-		
-	};
+		// create container for multiple related shaders
+		const sc = function() {
+			// iterate through every coordinate in the window
+			for (let i = 0; i < width * height; ++i) {
+				const cd = Cd.frommono(i, width);
+
+				// get world coordinate
+				const wcd = origin.add(cd);
+
+				// run shader with world coordinate and id
+				some function... 
+			}
+		};
+
+		// add the shader container to the pipeline as a single instruction
+		pipeline.push(sc);
+	}; */
 
 	// wraps a local coordinate into a coordinate within the window
 	this.wrap = function(cd) {
