@@ -4,10 +4,6 @@ const ctx = document.getElementById('canvas').getContext('2d');
 const cwidth = ctx.canvas.width;
 const cheight = ctx.canvas.height;
 
-
-
-
-
 // controls
 const controls = {
 	// control states
@@ -16,7 +12,6 @@ const controls = {
 		horizontal: 0
 	},
 	btnAState: 'keyup',
-	btnBState: 'keyup',
 
 	// control events
 	onDpadChange: newDir => {},
@@ -36,6 +31,10 @@ const controls = {
 					if (controls.dpadState[axis] === -limit) return;
 					controls.dpadState[axis] -= limit;
 				}
+				else {
+					console.log('Error: invalid keyPressDir');
+				}
+				// fire the payload event stored in .onDpadChange()
 				controls.onDpadChange(controls.dpadState);
 			}
 
@@ -48,6 +47,7 @@ const controls = {
 				case 'Space':
 					if (keyPressDir !== controls.btnAState) {
 						controls.btnAState = keyPressDir;
+						// fire the payload event stored in .onBtnAChange()
 						controls.onBtnAChange(keyPressDir);
 					}
 					break;
@@ -65,22 +65,25 @@ const controls = {
 	}
 };
 
-
-
 // title screen
-function ScrItem(text, index) {
+// constructor for menu screen item
+function MenuItem(text, index) {
 	this.text = text;
 	this.index = index;
 	this.print = function(colour, y) {
+		const itemSpacing = 30;
 		ctx.font = 'bold 20px courier';
 		ctx.fillStyle = colour;
-		ctx.fillText(text, cwidth / 2, y + 30 * index);
+		ctx.fillText(text, cwidth / 2, y + itemSpacing * index);
 	};
 }
+
+// base template for a navigable menu screen
 const navScr = {
-	items: [ /* array of ScrItems */ ],
+	items: [ /* array of MenuItems */ ],
 	cursor: 0,
-	start() {
+	// initialize and show the screen
+	start() { /// RENAME TO init()
 		// reset cursor to first item
 		this.cursor = 0;
 
@@ -109,9 +112,9 @@ const navScr = {
 const titleScr = Object.create(navScr);
 {
 	titleScr.items = [
-		new ScrItem('START', 0),
-		new ScrItem('HIGH SCORES', 1),
-		new ScrItem('OPTIONS', 2)
+		new MenuItem('START', 0),
+		new MenuItem('HIGH SCORES', 1),
+		new MenuItem('OPTIONS', 2)
 	];
 	titleScr.draw = function () {
 		// text preparations
@@ -334,8 +337,8 @@ const game = {
 const gamePauseScr = Object.create(navScr);
 {
 	gamePauseScr.items = [
-		new ScrItem('CONTINUE', 0),
-		new ScrItem('MAIN MENU', 1)
+		new MenuItem('CONTINUE', 0),
+		new MenuItem('MAIN MENU', 1)
 	];
 	gamePauseScr.draw = function () {
 		ctx.textAlign = 'center';
@@ -371,8 +374,8 @@ const gamePauseScr = Object.create(navScr);
 const gameOverScr = Object.create(navScr);
 {
 	gameOverScr.items = [
-		new ScrItem('PLAY AGAIN', 0),
-		new ScrItem('MAIN MENU', 1)
+		new MenuItem('PLAY AGAIN', 0),
+		new MenuItem('MAIN MENU', 1)
 	];
 	gameOverScr.draw = function () {
 		ctx.textAlign = 'center';
