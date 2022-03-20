@@ -11,11 +11,11 @@ const controls = {
 		vertical: 0,
 		horizontal: 0
 	},
-	btnAState: 'keyup',
+	selectBtnState: 'keyup',
 
 	// control events
 	onDpadChange: newDir => {},
-	onBtnAChange: newState => {},
+	onSelectChange: newState => {},
 
 	// setup method (to call at initialization)
 	init() {
@@ -32,7 +32,7 @@ const controls = {
 					controls.dpadState[axis] -= limit;
 				}
 				else {
-					console.log('Error: invalid keyPressDir');
+					console.log('error: invalid keyPressDir');
 				}
 				// fire the payload event stored in .onDpadChange()
 				controls.onDpadChange(controls.dpadState);
@@ -45,10 +45,10 @@ const controls = {
 				case 'KeyS': btnToAxis('vertical', -1); break;
 				case 'KeyD': btnToAxis('horizontal', 1); break;
 				case 'Space':
-					if (keyPressDir !== controls.btnAState) {
-						controls.btnAState = keyPressDir;
-						// fire the payload event stored in .onBtnAChange()
-						controls.onBtnAChange(keyPressDir);
+					if (keyPressDir !== controls.selectBtnState) {
+						controls.selectBtnState = keyPressDir;
+						// fire the payload event stored in .onSelectChange()
+						controls.onSelectChange(keyPressDir);
 					}
 					break;
 				default:
@@ -83,7 +83,7 @@ const navScr = {
 	items: [ /* array of MenuItems */ ],
 	cursor: 0,
 	// initialize and show the screen
-	start() { /// RENAME TO init()
+	init() {
 		// reset cursor to first item
 		this.cursor = 0;
 
@@ -91,8 +91,12 @@ const navScr = {
 		this.draw();
 
 		// set title screen control profile
-		controls.onDpadChange = newDir => { if (newDir.vertical !== 0) this.nav(newDir.vertical); };
-		controls.onBtnAChange = newState => { if (newState === 'keydown') this.select(); };
+		controls.onDpadChange = (newDir) => {
+			if (newDir.vertical !== 0) this.nav(newDir.vertical);
+		};
+		controls.onSelectChange = (newState) => {
+			if (newState === 'keydown') this.select();
+		};
 	},
 	drawItems(y) {
 		for (const item of this.items) { item.print('gray', y); }
@@ -109,6 +113,8 @@ const navScr = {
 	},
 	select() { /* switch on the items */ }
 };
+
+// title screen
 const titleScr = Object.create(navScr);
 {
 	titleScr.items = [
@@ -138,12 +144,10 @@ const titleScr = Object.create(navScr);
 			case 'START': game.start(); break;
 			case 'HIGH SCORES': break;
 			case 'OPTIONS': break;
-			default: console.log(this.items[this.cursor].text); 
+			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`); 
 		}
 	};
 }
-
-
 
 // game
 function Cd(x, y) {
@@ -158,8 +162,8 @@ function cdToMono(w, cd) { return cd.x + cd.y * w; }
 const game = {
 	boardWidth: 20,
 	boardHeight: 19,
-	get tileSize() { return Math.floor(cwidth / game.boardWidth); },
-	get boardOrigin() { return new Cd(0, game.tileSize); },
+	getTileSize() { return Math.floor(cwidth / game.boardWidth); },
+	getBoardOrigin() { return new Cd(0, game.getTileSize()); },
 	turnDelay: 350,
 
 	timer: undefined,
@@ -176,11 +180,11 @@ const game = {
 	},
 	snake: {
 		// head is a get/set property for the cd of the snake's head
-		get head() { return this.body[this.body.length - 1] },
-		set head(cd) { this.body.push(cd); },
+		getHead() { return this.body[this.body.length - 1] },
+		setHead(cd) { this.body.push(cd); },
 		removeTail() { this.body.shift(); },
-		// search through the whole snake body for another instance of head
 		testCollision() {
+			// search through the whole snake body for another instance of head
 			const body = this.body;
 			const headI = body.length - 1;
 			for (let i = 0; i < body.length; ++i) {
@@ -194,9 +198,9 @@ const game = {
 	food: {
 		pos: undefined,
 		make() {
-			// PROBLEMATIC ALGORITHM!!! 
+			/// PROBLEMATIC ALGORITHM!!! 
 			const numFreeTiles = game.boardWidth * game.boardHeight - game.snake.body.length;
-			if (numFreeTiles === 0) console.log('...nice...'); 
+			if (numFreeTiles === 0) console.log('error: no more tiles to generate food'); 
 			let ran = Math.floor(Math.random() * numFreeTiles);
 			for (let i = 0; i < game.snake.body.length; ++i) {
 				if (ran === cdToMono(game.boardWidth, game.snake.body[i])) {
@@ -208,13 +212,13 @@ const game = {
 		}
 	},
 	drawBoard() {
-		const w = game.tileSize;
+		const w = game.getTileSize();
 
 		// fill with background
 		ctx.fillStyle = 'black';
 		ctx.fillRect(
-				game.boardOrigin.x,
-				game.boardOrigin.y,
+				game.getBoardOrigin().x,
+				game.getBoardOrigin().y,
 				game.boardWidth * w,
 				game.boardHeight * w
 		);
@@ -223,8 +227,8 @@ const game = {
 		const f = game.food.pos;
 		ctx.beginPath();
 		ctx.arc(
-				w * f.x + w / 2 + game.boardOrigin.x,
-				w * f.y + w / 2 + game.boardOrigin.y,
+				w * f.x + w / 2 + game.getBoardOrigin().x,
+				w * f.y + w / 2 + game.getBoardOrigin().y,
 				w / 2,
 				0, 2 * Math.PI, false
 		);
@@ -235,8 +239,8 @@ const game = {
 		ctx.beginPath();
 		game.snake.body.forEach(function (segment, i, body) {
 			ctx.rect(
-					w * segment.x + game.boardOrigin.x,
-					w * segment.y + game.boardOrigin.y,
+					w * segment.x + game.getBoardOrigin().x,
+					w * segment.y + game.getBoardOrigin().y,
 					w, w
 			);
 		});
@@ -246,14 +250,14 @@ const game = {
 	drawScore() {
 		// clear the score area
 		ctx.fillStyle = 'midnightblue';
-		ctx.fillRect(0, 0, cwidth, game.tileSize);
+		ctx.fillRect(0, 0, cwidth, game.getTileSize());
 
 		// print the score
 		ctx.fillStyle = 'white';
 		ctx.textAlign = 'left';
 		ctx.textBaseline = 'middle';
-		ctx.font = `bold ${game.tileSize - 4}px courier`;
-		ctx.fillText(`Score: ${game.score}`, 4, game.tileSize / 2);
+		ctx.font = `bold ${game.getTileSize() - 4}px courier`;
+		ctx.fillText(`Score: ${game.score}`, 4, game.getTileSize() / 2);
 	},
 	changeDir(newDir) {
 		const newDirCd = new Cd(newDir.horizontal, -newDir.vertical);
@@ -289,32 +293,32 @@ const game = {
 		game.resume();
 	},
 	turn() {
-		const snake = game.snake;
-
 		game.prevDir = game.savedDir;
-		snake.head = game.wrapSnake(snake.head.add(game.savedDir));
-		if (snake.head.equals(game.food.pos)) {
+		game.snake.setHead(
+			game.wrapSnake(game.snake.getHead().add(game.savedDir))
+		);
+		if (game.snake.getHead().equals(game.food.pos)) {
 			++game.score;
-			// only need to update score display when score changes
+			// update score display when score changes
 			game.drawScore();
 			game.food.make();
 		}
-		else { snake.removeTail(); }
+		else { game.snake.removeTail(); }
 
 		// draw game screen
 		game.drawBoard();
 
-		if (snake.testCollision()) { game.end(); }
+		if (game.snake.testCollision()) { game.end(); }
 	},
 	pause() {
 		if (!game.canPause) return;
 		clearInterval(game.timer);
-		gamePauseScr.start();
+		gamePauseScr.init();
 	},
 	resume() {
 		// init controls
 		controls.onDpadChange = game.changeDir;
-		controls.onBtnAChange = newState => { if (newState === 'keydown') game.pause(); };
+		controls.onSelectChange = newState => { if (newState === 'keydown') game.pause(); };
 
 		// draw game board
 		game.drawBoard();
@@ -323,17 +327,16 @@ const game = {
 		game.drawScore();
 
 		// start turn system
-		game.timer = setInterval(function () { game.turn(); }, game.turnDelay);
+		game.timer = setInterval(() => { game.turn(); }, game.turnDelay);
 	},
 	end() {
 		game.canPause = false;
 		clearInterval(game.timer);
-		setTimeout(function () { gameOverScr.start(); }, 1500);
+		setTimeout(() => { gameOverScr.init(); }, 1500);
 	}
 };
 
-
-
+// game pause screen
 const gamePauseScr = Object.create(navScr);
 {
 	gamePauseScr.items = [
@@ -363,13 +366,11 @@ const gamePauseScr = Object.create(navScr);
 	gamePauseScr.select = function () {
 		switch (this.items[this.cursor].text) {
 			case 'CONTINUE': game.resume(); break;
-			case 'MAIN MENU': titleScr.start(); break;
-			default: console.log(this.items[this.cursor].text);
+			case 'MAIN MENU': titleScr.init(); break;
+			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`);
 		}
 	};
 }
-
-
 
 const gameOverScr = Object.create(navScr);
 {
@@ -400,14 +401,12 @@ const gameOverScr = Object.create(navScr);
 	gameOverScr.select = function () {
 		switch (this.items[this.cursor].text) {
 			case 'PLAY AGAIN': game.start(); break;
-			case 'MAIN MENU': titleScr.start(); break;
-			default: console.log(this.items[this.cursor].text); 
+			case 'MAIN MENU': titleScr.init(); break;
+			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`); 
 		}
 	};
 }
 
-
-
 // init
 controls.init();
-titleScr.start();
+titleScr.init();
