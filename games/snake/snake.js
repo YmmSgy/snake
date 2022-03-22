@@ -285,7 +285,7 @@ const game = {
 				Math.round(game.boardWidth / 2),
 				Math.round(game.boardHeight / 2)
 		));
-		game.snake.body.push(game.snake.body[0].add(new Cd(0, 1)));
+		game.snake.body.unshift(game.snake.body[0].add(game.savedDir.scale(-1)));
 
 		// generate first food
 		game.food.make();
