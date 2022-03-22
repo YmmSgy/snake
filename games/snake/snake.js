@@ -198,17 +198,25 @@ const game = {
 	food: {
 		pos: undefined,
 		make() {
-			/// PROBLEMATIC ALGORITHM!!! 
-			const numFreeTiles = game.boardWidth * game.boardHeight - game.snake.body.length;
-			if (numFreeTiles === 0) console.log('error: no more tiles to generate food'); 
-			let ran = Math.floor(Math.random() * numFreeTiles);
-			for (let i = 0; i < game.snake.body.length; ++i) {
-				if (ran === cdToMono(game.boardWidth, game.snake.body[i])) {
-					ran = numFreeTiles + i;
-					break;
+			const whitelist = [];
+
+			for (let y = 0; y < game.boardHeight; y++) {
+				for (let x = 0; x < game.boardWidth; x++) {
+					const cd = new Cd(x, y);
+					// as long as snake does not contain cd, add to whitelist
+					if (!game.snake.body.some((scd) => scd.equals(cd))) {
+						whitelist.push(cd);
+					}
 				}
 			}
-			this.pos = monoToCd(game.boardWidth, ran);
+
+			if (whitelist.length === 0) {
+				// no tiles left to create new food
+				game.end();
+				return;
+			}
+
+			this.pos = whitelist[Math.floor(Math.random() * whitelist.length)];
 		}
 	},
 	drawBoard() {
