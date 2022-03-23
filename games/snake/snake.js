@@ -185,12 +185,8 @@ const game = {
 		removeTail() { this.body.shift(); },
 		testCollision() {
 			// search through the whole snake body for another instance of head
-			const body = this.body;
-			const headI = body.length - 1;
-			for (let i = 0; i < body.length; ++i) {
-				if (body[i].equals(body[headI]) && i !== headI) return true;
-			}
-			return false;
+			const i = this.body.findIndex((s) => s.equals(this.getHead()));
+			return 0 <= i && i < this.body.length - 1;
 		},
 		// the array of snake segment cds
 		body: undefined
