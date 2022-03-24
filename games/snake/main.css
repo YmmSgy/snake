@@ -1,0 +1,19 @@
+* {
+	box-sizing: border-box;
+	margin: 0;
+	border: none;
+	outline: none;
+}
+html {
+	height: 100%;
+	width: 100%;
+}
+body {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+canvas {
+    image-rendering: pixelated;
+}
