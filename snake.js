@@ -5,37 +5,37 @@ const cwidth = ctx.canvas.width;
 const cheight = ctx.canvas.height;
 
 // controls
-const controls = {
+class Controls {
 	// control states
-	dpadState: {
+	#dpadState = {
 		vertical: 0,
 		horizontal: 0
-	},
-	selectBtnState: 'keyup',
+	};
+	#selectBtnState = 'keyup';
 
 	// control events
-	onDpadChange: newDir => {},
-	onSelectChange: newState => {},
+	onDpadChange = newDir => {};
+	onSelectChange = newState => {};
 
 	// setup method (to call at initialization)
 	init() {
 		// parses input into control events and changes control state
-		function receiveInput(keyPressDir, key) {
+		const receiveInput = (keyPressDir, key) => {
 			// translate key presses into axis changes
-			function btnToAxis(axis, limit) {
+			const btnToAxis = (axis, limit) => {
 				if (keyPressDir === 'keydown') {
-					if (controls.dpadState[axis] === limit) return;
-					controls.dpadState[axis] += limit;
+					if (this.#dpadState[axis] === limit) return;
+					this.#dpadState[axis] += limit;
 				}
 				else if (keyPressDir === 'keyup') {
-					if (controls.dpadState[axis] === -limit) return;
-					controls.dpadState[axis] -= limit;
+					if (this.#dpadState[axis] === -limit) return;
+					this.#dpadState[axis] -= limit;
 				}
 				else {
 					console.log('error: invalid keyPressDir');
 				}
 				// fire the payload event stored in .onDpadChange()
-				controls.onDpadChange(controls.dpadState);
+				this.onDpadChange(this.#dpadState);
 			}
 
 			// determine which control changed and fire corresponding event
@@ -45,10 +45,10 @@ const controls = {
 				case 'KeyS': btnToAxis('vertical', -1); break;
 				case 'KeyD': btnToAxis('horizontal', 1); break;
 				case 'Space':
-					if (keyPressDir !== controls.selectBtnState) {
-						controls.selectBtnState = keyPressDir;
+					if (keyPressDir !== this.#selectBtnState) {
+						this.#selectBtnState = keyPressDir;
 						// fire the payload event stored in .onSelectChange()
-						controls.onSelectChange(keyPressDir);
+						this.onSelectChange(keyPressDir);
 					}
 					break;
 				default:
@@ -56,10 +56,10 @@ const controls = {
 		}
 
 		// register for keyboard events
-		document.addEventListener('keydown', function (e) {
+		document.addEventListener('keydown', (e) => {
 			if (!e.repeat) receiveInput('keydown', e.code);
 		});
-		document.addEventListener('keyup', function (e) {
+		document.addEventListener('keyup', (e) => {
 			receiveInput('keyup', e.code);
 		});
 	}
@@ -412,5 +412,6 @@ const gameOverScr = Object.create(navScr);
 }
 
 // init
+const controls = new Controls();
 controls.init();
 titleScr.init();
