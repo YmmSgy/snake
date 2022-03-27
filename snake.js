@@ -67,21 +67,25 @@ class Controls {
 
 // title screen
 // constructor for menu screen item
-function MenuItem(text, index) {
-	this.text = text;
-	this.index = index;
-	this.print = function(colour, y) {
+class MenuItem {
+	text;
+	index;
+	constructor(text, index) {
+		this.text = text;
+		this.index = index;
+	}
+	print(colour, y) {
 		const itemSpacing = 30;
 		ctx.font = 'bold 20px courier';
 		ctx.fillStyle = colour;
-		ctx.fillText(text, cwidth / 2, y + itemSpacing * index);
-	};
+		ctx.fillText(this.text, cwidth / 2, y + itemSpacing * this.index);
+	}
 }
 
 // base template for a navigable menu screen
-const navScr = {
-	items: [ /* array of MenuItems */ ],
-	cursor: 0,
+class NavScreen {
+	items = [ /* array of MenuItems */ ];
+	cursor = 0;
 	// initialize and show the screen
 	init() {
 		// reset cursor to first item
@@ -97,12 +101,12 @@ const navScr = {
 		controls.onSelectChange = (newState) => {
 			if (newState === 'keydown') this.select();
 		};
-	},
+	}
 	drawItems(y) {
 		for (const item of this.items) { item.print('gray', y); }
 		this.items[this.cursor].print('white', y);
-	},
-	draw() { /* redraw the screen */ },
+	}
+	draw() { /* redraw the screen */ }
 	nav(dir) {
 		// wrap cursor and change selection
 		let count = this.items.length;
@@ -110,19 +114,18 @@ const navScr = {
 
 		// redraw screen with new menu item highlight
 		this.draw();
-	},
+	}
 	select() { /* switch on the items */ }
 };
 
 // title screen
-const titleScr = Object.create(navScr);
-{
-	titleScr.items = [
+class TitleScreen extends NavScreen {
+	items = [
 		new MenuItem('START', 0),
 		new MenuItem('HIGH SCORES', 1),
 		new MenuItem('OPTIONS', 2)
 	];
-	titleScr.draw = function () {
+	draw() {
 		// text preparations
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
@@ -139,7 +142,7 @@ const titleScr = Object.create(navScr);
 		// menu items
 		this.drawItems(cheight / 2);
 	};
-	titleScr.select = function () {
+	select() {
 		switch (this.items[this.cursor].text) {
 			case 'START': game.start(); break;
 			case 'HIGH SCORES': break;
@@ -317,6 +320,7 @@ const game = {
 	pause() {
 		if (!game.canPause) return;
 		clearInterval(game.timer);
+		const gamePauseScr = new GamePauseScreen();
 		gamePauseScr.init();
 	},
 	resume() {
@@ -336,18 +340,17 @@ const game = {
 	end() {
 		game.canPause = false;
 		clearInterval(game.timer);
-		setTimeout(() => { gameOverScr.init(); }, 1500);
+		setTimeout(() => { const gameOverScr = new GameOverScreen(); gameOverScr.init(); }, 1500);
 	}
 };
 
 // game pause screen
-const gamePauseScr = Object.create(navScr);
-{
-	gamePauseScr.items = [
+class GamePauseScreen extends NavScreen {
+	items = [
 		new MenuItem('CONTINUE', 0),
 		new MenuItem('MAIN MENU', 1)
 	];
-	gamePauseScr.draw = function () {
+	draw() {
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
 
@@ -367,7 +370,7 @@ const gamePauseScr = Object.create(navScr);
 		// print items
 		this.drawItems(cheight / 2);
 	};
-	gamePauseScr.select = function () {
+	select() {
 		switch (this.items[this.cursor].text) {
 			case 'CONTINUE': game.resume(); break;
 			case 'MAIN MENU': titleScr.init(); break;
@@ -376,13 +379,12 @@ const gamePauseScr = Object.create(navScr);
 	};
 }
 
-const gameOverScr = Object.create(navScr);
-{
-	gameOverScr.items = [
+class GameOverScreen extends NavScreen {
+	items = [
 		new MenuItem('PLAY AGAIN', 0),
 		new MenuItem('MAIN MENU', 1)
 	];
-	gameOverScr.draw = function () {
+	draw() {
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
 
@@ -402,7 +404,7 @@ const gameOverScr = Object.create(navScr);
 		// print items
 		this.drawItems(cheight / 2);
 	};
-	gameOverScr.select = function () {
+	select() {
 		switch (this.items[this.cursor].text) {
 			case 'PLAY AGAIN': game.start(); break;
 			case 'MAIN MENU': titleScr.init(); break;
@@ -414,4 +416,5 @@ const gameOverScr = Object.create(navScr);
 // init
 const controls = new Controls();
 controls.init();
+const titleScr = new TitleScreen();
 titleScr.init();
