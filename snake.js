@@ -144,7 +144,7 @@ class TitleScreen extends NavScreen {
 	};
 	select() {
 		switch (this.items[this.cursor].text) {
-			case 'START': game.start(); break;
+			case 'START': game = new Game(); game.resume(); break;
 			case 'HIGH SCORES': break;
 			case 'OPTIONS': break;
 			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`); 
@@ -153,89 +153,120 @@ class TitleScreen extends NavScreen {
 }
 
 // game
-function Cd(x, y) {
-	this.x = x;
-	this.y = y;
-	this.equals = other => this.x === other.x && this.y === other.y;
-	this.add = other => new Cd(this.x + other.x, this.y + other.y);
-	this.scale = factor => new Cd(this.x * factor, this.y * factor);
+class Cd {
+	constructor(x, y) {
+		this.x = x;
+		this.y = y;
+	}
+	x; y;
+	equals(other) { return this.x === other.x && this.y === other.y; }
+	add(other) { return new Cd(this.x + other.x, this.y + other.y); }
+	scale(factor) { return new Cd(this.x * factor, this.y * factor); }
 }
 function monoToCd(w, mono) { return new Cd(mono % w, Math.floor(mono / w)); }
 function cdToMono(w, cd) { return cd.x + cd.y * w; }
-const game = {
-	boardWidth: 20,
-	boardHeight: 19,
-	getTileSize() { return Math.floor(cwidth / game.boardWidth); },
-	getBoardOrigin() { return new Cd(0, game.getTileSize()); },
-	turnDelay: 350,
-
-	timer: undefined,
-	score: 0,
-	savedDir: undefined,
-	prevDir: undefined,
-	canPause: false,
-	wrapSnake(cd) {
-		if (cd.x < 0) { cd.x = game.boardWidth - 1; }
-		else if (cd.x > game.boardWidth - 1) { cd.x = 0; }
-		if (cd.y < 0) { cd.y = game.boardHeight - 1; }
-		else if (cd.y > game.boardHeight - 1) { cd.y = 0; }
+class Board {
+	constructor(w, h) {
+		this.width = w;
+		this.height = h;
+		this.tileSize = Math.floor(cwidth / this.width);
+		this.origin = new Cd(0, this.tileSize);
+	}
+	width = 20;
+	height = 19;
+	tileSize;
+	origin;
+	wrap(cd) {
+		if (cd.x < 0) { cd.x = this.width - 1; }
+		else if (cd.x > this.width - 1) { cd.x = 0; }
+		if (cd.y < 0) { cd.y = this.height - 1; }
+		else if (cd.y > this.height - 1) { cd.y = 0; }
 		return cd;
-	},
-	snake: {
-		// head is a get/set property for the cd of the snake's head
-		getHead() { return this.body[this.body.length - 1] },
-		setHead(cd) { this.body.push(cd); },
-		removeTail() { this.body.shift(); },
-		testCollision() {
-			// search through the whole snake body for another instance of head
-			const i = this.body.findIndex((s) => s.equals(this.getHead()));
-			return 0 <= i && i < this.body.length - 1;
-		},
-		// the array of snake segment cds
-		body: undefined
-	},
-	food: {
-		pos: undefined,
-		make() {
-			const whitelist = [];
+	}
+}
+class Snake {
+	constructor(board, initDir) {
+		const startHead = new Cd(
+			Math.round(board.width / 2),
+			Math.round(board.height / 2)
+		);
+		const startTail = startHead.add(initDir.scale(-1));
+		this.body = [startTail, startHead];
+		this.prevDir = initDir;
+		this.savedDir = initDir;
+	}
+	// head is a get/set property for the cd of the snake's head
+	get head() { return this.body[this.body.length - 1] }
+	set head(cd) { this.body.push(cd); }
+	removeTail() { this.body.shift(); }
+	testCollision() {
+		// search through the whole snake body for another instance of head
+		const i = this.body.findIndex((s) => s.equals(this.head));
+		return 0 <= i && i < this.body.length - 1;
+	}
+	// the array of snake segment cds
+	body;
+	prevDir;
+	savedDir;
+}
+class NoTilesLeftError extends Error {
+	constructor(message) {
+		super(message);
+		this.name = this.constructor.name;
+	}
+}
+class Food extends Cd {
+	constructor(board, snake) {
+		const whitelist = [];
 
-			for (let y = 0; y < game.boardHeight; y++) {
-				for (let x = 0; x < game.boardWidth; x++) {
-					const cd = new Cd(x, y);
-					// as long as snake does not contain cd, add to whitelist
-					if (!game.snake.body.some((scd) => scd.equals(cd))) {
-						whitelist.push(cd);
-					}
+		for (let y = 0; y < board.height; y++) {
+			for (let x = 0; x < board.width; x++) {
+				const cd = new Cd(x, y);
+				// as long as snake does not contain cd, add to whitelist
+				if (!snake.body.some((scd) => scd.equals(cd))) {
+					whitelist.push(cd);
 				}
 			}
-
-			if (whitelist.length === 0) {
-				// no tiles left to create new food
-				game.end();
-				return;
-			}
-
-			this.pos = whitelist[Math.floor(Math.random() * whitelist.length)];
 		}
-	},
+
+		if (whitelist.length === 0) throw new NoTilesLeftError();
+
+		const foodCd = whitelist[Math.floor(Math.random() * whitelist.length)];
+		super(foodCd.x, foodCd.y);
+	}
+}
+class Game {
+	constructor() {
+		this.board = new Board(20, 19);
+		this.snake = new Snake(this.board, new Cd(0, -1));
+		this.food = new Food(this.board, this.snake);
+		this.score = 0;
+	}
+	board;
+	snake;
+	food;
+	turnDelay = 350;
+	timer;
+	score;
+
 	drawBoard() {
-		const w = game.getTileSize();
+		const w = this.board.tileSize;
 
 		// fill with background
 		ctx.fillStyle = 'black';
 		ctx.fillRect(
-				game.getBoardOrigin().x,
-				game.getBoardOrigin().y,
-				game.boardWidth * w,
-				game.boardHeight * w
+				this.board.origin.x,
+				this.board.origin.y,
+				this.board.width * w,
+				this.board.height * w
 		);
 
 		// draw food
-		const f = game.food.pos;
+		const f = this.food;
 		ctx.beginPath();
 		ctx.arc(
-				w * f.x + w / 2 + game.getBoardOrigin().x,
-				w * f.y + w / 2 + game.getBoardOrigin().y,
+				w * f.x + w / 2 + this.board.origin.x,
+				w * f.y + w / 2 + this.board.origin.y,
 				w / 2,
 				0, 2 * Math.PI, false
 		);
@@ -244,103 +275,84 @@ const game = {
 
 		// draw snake
 		ctx.beginPath();
-		game.snake.body.forEach(function (segment, i, body) {
+		this.snake.body.forEach((segment) => {
 			ctx.rect(
-					w * segment.x + game.getBoardOrigin().x,
-					w * segment.y + game.getBoardOrigin().y,
+					w * segment.x + this.board.origin.x,
+					w * segment.y + this.board.origin.y,
 					w, w
 			);
 		});
 		ctx.fillStyle = 'red';
 		ctx.fill();
-	},
+	}
 	drawScore() {
 		// clear the score area
 		ctx.fillStyle = 'midnightblue';
-		ctx.fillRect(0, 0, cwidth, game.getTileSize());
+		ctx.fillRect(0, 0, cwidth, this.board.tileSize);
 
 		// print the score
 		ctx.fillStyle = 'white';
 		ctx.textAlign = 'left';
 		ctx.textBaseline = 'middle';
-		ctx.font = `bold ${game.getTileSize() - 4}px courier`;
-		ctx.fillText(`Score: ${game.score}`, 4, game.getTileSize() / 2);
-	},
-	changeDir(newDir) {
+		ctx.font = `bold ${this.board.tileSize - 4}px courier`;
+		ctx.fillText(`Score: ${this.score}`, 4, this.board.tileSize / 2);
+	}
+	handleDpad(newDir) {
 		const newDirCd = new Cd(newDir.horizontal, -newDir.vertical);
 		if (
 				!newDirCd.equals(new Cd(0, 0)) &&
-				!newDirCd.equals(game.prevDir.scale(-1)) &&
+				!newDirCd.equals(this.snake.prevDir.scale(-1)) &&
 				(
 					newDirCd.equals(new Cd( 1,  0)) ||
 					newDirCd.equals(new Cd(-1,  0)) ||
 					newDirCd.equals(new Cd( 0,  1)) ||
 					newDirCd.equals(new Cd( 0, -1))
 				)
-		) { game.savedDir = newDirCd; }
-	},
-	start() {
-		// init properties
-		game.snake.body = [];
-		game.score = 0;
-		game.savedDir = new Cd(0, -1);
-		game.prevDir = new Cd(0, -1);
-		game.canPause = true;
-
-		// init the snake
-		game.snake.body.push(new Cd(
-				Math.round(game.boardWidth / 2),
-				Math.round(game.boardHeight / 2)
-		));
-		game.snake.body.unshift(game.snake.body[0].add(game.savedDir.scale(-1)));
-
-		// generate first food
-		game.food.make();
-
-		game.resume();
-	},
+		) { this.snake.savedDir = newDirCd; }
+	}
 	turn() {
-		game.prevDir = game.savedDir;
-		game.snake.setHead(
-			game.wrapSnake(game.snake.getHead().add(game.savedDir))
-		);
-		if (game.snake.getHead().equals(game.food.pos)) {
-			++game.score;
+		this.snake.prevDir = this.snake.savedDir;
+		this.snake.head = this.board.wrap(this.snake.head.add(this.snake.savedDir));
+		if (this.snake.head.equals(this.food)) {
+			++this.score;
 			// update score display when score changes
-			game.drawScore();
-			game.food.make();
+			this.drawScore();
+			try { this.food = new Food(this.board, this.snake); }
+			catch (e) {
+				if (e instanceof NoTilesLeftError) this.end();
+			}
 		}
-		else { game.snake.removeTail(); }
+		else { this.snake.removeTail(); }
 
 		// draw game screen
-		game.drawBoard();
+		this.drawBoard();
 
-		if (game.snake.testCollision()) { game.end(); }
-	},
+		if (this.snake.testCollision()) { this.end(); }
+	}
 	pause() {
-		if (!game.canPause) return;
-		clearInterval(game.timer);
+		clearInterval(this.timer);
 		const gamePauseScr = new GamePauseScreen();
 		gamePauseScr.init();
-	},
+	}
 	resume() {
 		// init controls
-		controls.onDpadChange = game.changeDir;
-		controls.onSelectChange = newState => { if (newState === 'keydown') game.pause(); };
+		controls.onDpadChange = newDir => this.handleDpad(newDir);
+		controls.onSelectChange = newState => { if (newState === 'keydown') this.pause(); };
 
 		// draw game board
-		game.drawBoard();
+		this.drawBoard();
 
 		// draw score header
-		game.drawScore();
+		this.drawScore();
 
 		// start turn system
-		game.timer = setInterval(() => { game.turn(); }, game.turnDelay);
-	},
+		this.timer = setInterval(() => { this.turn(); }, this.turnDelay);
+	}
 	end() {
-		game.canPause = false;
-		clearInterval(game.timer);
-		setTimeout(() => { const gameOverScr = new GameOverScreen(); gameOverScr.init(); }, 1500);
+		controls.onDpadChange = () => {};
+		controls.onSelectChange = () => {};
+		clearInterval(this.timer);
+		setTimeout(() => { const gameOverScr = new GameOverScreen(this.score); gameOverScr.init(); }, 1500);
 	}
 };
 
@@ -406,7 +418,7 @@ class GameOverScreen extends NavScreen {
 	};
 	select() {
 		switch (this.items[this.cursor].text) {
-			case 'PLAY AGAIN': game.start(); break;
+			case 'PLAY AGAIN': game.resume(); break;
 			case 'MAIN MENU': titleScr.init(); break;
 			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`); 
 		}
@@ -415,6 +427,7 @@ class GameOverScreen extends NavScreen {
 
 // init
 const controls = new Controls();
-controls.init();
 const titleScr = new TitleScreen();
+let game;
+controls.init();
 titleScr.init();
