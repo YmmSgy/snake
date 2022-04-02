@@ -63,7 +63,7 @@ class Controls {
 			receiveInput('keyup', e.code);
 		});
 	}
-};
+}
 
 // title screen
 // constructor for menu screen item
