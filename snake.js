@@ -120,7 +120,7 @@ class MenuScreen {
 
 class TitleScreen extends MenuScreen {
 	items = [
-		new MenuItem('START', () => game = new Game()),
+		new MenuItem('START', () => new Game()),
 		new MenuItem('HIGH SCORES', () => {}),
 		new MenuItem('OPTIONS', () => {})
 	];
@@ -149,12 +149,16 @@ class TitleScreen extends MenuScreen {
 
 class GamePauseScreen extends MenuScreen {
 	items = [
-		new MenuItem('CONTINUE', () => game.resume()),
+		new MenuItem('CONTINUE', () => this.#gameObj.resume()),
 		new MenuItem('MAIN MENU', () => new TitleScreen())
 	];
 	itemsOffset = cheight / 2;
-	constructor () {
+	#gameObj;
+	#score;
+	constructor (gameObj, score) {
 		super();
+		this.#gameObj = gameObj;
+		this.#score = score;
 		this.draw();
 		this.initControls();
 	}
@@ -171,7 +175,7 @@ class GamePauseScreen extends MenuScreen {
 
 		// print score
 		ctx.font = 'bold 20px courier';
-		ctx.fillText(`Score: ${game.score}`, cwidth / 2, cheight / 3);
+		ctx.fillText(`Score: ${this.#score}`, cwidth / 2, cheight / 3);
 
 		// print items
 		this.drawItems();
@@ -180,12 +184,14 @@ class GamePauseScreen extends MenuScreen {
 
 class GameOverScreen extends MenuScreen {
 	items = [
-		new MenuItem('PLAY AGAIN', () => game = new Game()),
-		new MenuItem('MAIN MENU', new TitleScreen())
+		new MenuItem('PLAY AGAIN', () => new Game()),
+		new MenuItem('MAIN MENU', () => new TitleScreen())
 	];
 	itemsOffset = cheight / 2;
-	constructor () {
+	#score;
+	constructor (score) {
 		super();
+		this.#score = score;
 		this.draw();
 		this.initControls();
 	}
@@ -202,7 +208,7 @@ class GameOverScreen extends MenuScreen {
 
 		// print score
 		ctx.font = 'bold 20px courier';
-		ctx.fillText(`Score: ${game.score}`, cwidth / 2, cheight / 3);
+		ctx.fillText(`Score: ${this.#score}`, cwidth / 2, cheight / 3);
 
 		// print items
 		this.drawItems();
@@ -385,7 +391,7 @@ class Game {
 	}
 	pause() {
 		clearInterval(this.timer);
-		new GamePauseScreen();
+		new GamePauseScreen(this, this.score);
 	}
 	resume() {
 		// init controls
@@ -407,9 +413,8 @@ class Game {
 		clearInterval(this.timer);
 		setTimeout(() => { new GameOverScreen(this.score); }, 1500);
 	}
-};
+}
 
 // init
 const controls = new Controls();
-let game;
 new TitleScreen();
