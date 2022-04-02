@@ -67,73 +67,75 @@ class Controls {
 // menu screen item
 class MenuItem {
 	text;
-	index;
-	constructor(text, index) {
+	onSelect;
+	constructor(text, onSelectFn) {
 		this.text = text;
-		this.index = index;
-	}
-	print(colour, y) {
-		const itemSpacing = 30;
-		ctx.font = 'bold 20px courier';
-		ctx.fillStyle = colour;
-		ctx.fillText(this.text, cwidth / 2, y + itemSpacing * this.index);
+		this.onSelect = onSelectFn;
 	}
 }
 
 // menu screens
 class MenuScreen {
-	// array of MenuItems
 	items = [];
 	cursor = 0;
-	
-	// initialize and show the screen
-	show() {
-		// reset cursor to first item
-		this.cursor = 0;
+	itemsOffset;
+	itemsSpacing = 30;
+	clearScreen() {
+		ctx.fillStyle = 'black';
+		ctx.fillRect(0, 0, cwidth, cheight);
+	}
+	drawItems() {
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.font = 'bold 20px courier';
+		for (let i = 0; i < this.items.length; i++) {
+			if (i === this.cursor) { ctx.fillStyle = 'white'; }
+			else { ctx.fillStyle = 'gray'; }
 
-		// draw title screen
-		this.draw();
+			ctx.fillText(
+				this.items[i].text,
+				cwidth / 2,
+				this.itemsOffset + this.itemsSpacing * i
+			);
+		}
+	}
+	initControls() {
+		const nav = (dir) => {
+			// wrap cursor and change selection
+			let count = this.items.length;
+			this.cursor = (((this.cursor - dir) % count) + count) % count;
 
-		// set title screen control profile
+			// redraw screen with new menu item highlight
+			this.draw();
+		};
+
 		controls.onDpadChange = (newDir) => {
-			if (newDir.vertical !== 0) this.nav(newDir.vertical);
+			if (newDir.vertical !== 0) nav(newDir.vertical);
 		};
 		controls.onSelectChange = (newState) => {
-			if (newState === 'keydown') this.select();
+			if (newState === 'keydown') this.items[this.cursor].onSelect();
 		};
-	}
-	drawItems(y) {
-		for (const item of this.items) { item.print('gray', y); }
-		this.items[this.cursor].print('white', y);
-	}
-	nav(dir) {
-		// wrap cursor and change selection
-		let count = this.items.length;
-		this.cursor = (((this.cursor - dir) % count) + count) % count;
-
-		// redraw screen with new menu item highlight
-		this.draw();
 	}
 }
 
 class TitleScreen extends MenuScreen {
 	items = [
-		new MenuItem('START', 0),
-		new MenuItem('HIGH SCORES', 1),
-		new MenuItem('OPTIONS', 2)
+		new MenuItem('START', () => game = new Game()),
+		new MenuItem('HIGH SCORES', () => {}),
+		new MenuItem('OPTIONS', () => {})
 	];
+	itemsOffset = cheight / 2;
 	constructor() {
 		super();
-		this.show();
+		this.draw();
+		this.initControls();
 	}
 	draw() {
+		this.clearScreen();
+
 		// text preparations
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-
-		// background
-		ctx.fillStyle = 'black';
-		ctx.fillRect(0, 0, cwidth, cheight);
 
 		// main title
 		ctx.fillStyle = 'white';
@@ -141,34 +143,26 @@ class TitleScreen extends MenuScreen {
 		ctx.fillText('Snake', cwidth / 2, cheight / 5);
 
 		// menu items
-		this.drawItems(cheight / 2);
-	};
-	select() {
-		switch (this.items[this.cursor].text) {
-			case 'START': game = new Game(); break;
-			case 'HIGH SCORES': break;
-			case 'OPTIONS': break;
-			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`); 
-		}
-	};
+		this.drawItems();
+	}
 }
 
 class GamePauseScreen extends MenuScreen {
 	items = [
-		new MenuItem('CONTINUE', 0),
-		new MenuItem('MAIN MENU', 1)
+		new MenuItem('CONTINUE', () => game.resume()),
+		new MenuItem('MAIN MENU', () => new TitleScreen())
 	];
+	itemsOffset = cheight / 2;
 	constructor () {
 		super();
-		this.show();
+		this.draw();
+		this.initControls();
 	}
 	draw() {
+		this.clearScreen();
+
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-
-		// clear whole screen
-		ctx.fillStyle = 'black';
-		ctx.fillRect(0, 0, cwidth, cheight);
 
 		// print paused
 		ctx.fillStyle = 'white';
@@ -180,33 +174,26 @@ class GamePauseScreen extends MenuScreen {
 		ctx.fillText(`Score: ${game.score}`, cwidth / 2, cheight / 3);
 
 		// print items
-		this.drawItems(cheight / 2);
-	};
-	select() {
-		switch (this.items[this.cursor].text) {
-			case 'CONTINUE': game.resume(); break;
-			case 'MAIN MENU': new TitleScreen(); break;
-			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`);
-		}
-	};
+		this.drawItems();
+	}
 }
 
 class GameOverScreen extends MenuScreen {
 	items = [
-		new MenuItem('PLAY AGAIN', 0),
-		new MenuItem('MAIN MENU', 1)
+		new MenuItem('PLAY AGAIN', () => game = new Game()),
+		new MenuItem('MAIN MENU', new TitleScreen())
 	];
+	itemsOffset = cheight / 2;
 	constructor () {
 		super();
-		this.show();
+		this.draw();
+		this.initControls();
 	}
 	draw() {
+		this.clearScreen();
+
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-
-		// clear whole screen
-		ctx.fillStyle = 'black';
-		ctx.fillRect(0, 0, cwidth, cheight);
 
 		// print game over
 		ctx.fillStyle = 'white';
@@ -218,15 +205,8 @@ class GameOverScreen extends MenuScreen {
 		ctx.fillText(`Score: ${game.score}`, cwidth / 2, cheight / 3);
 
 		// print items
-		this.drawItems(cheight / 2);
-	};
-	select() {
-		switch (this.items[this.cursor].text) {
-			case 'PLAY AGAIN': game = new Game(); break;
-			case 'MAIN MENU': new TitleScreen(); break;
-			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`); 
-		}
-	};
+		this.drawItems();
+	}
 }
 
 // game
