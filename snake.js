@@ -182,28 +182,26 @@ class Board {
 		return cd;
 	}
 }
-class Snake {
+class Snake extends Array {
 	constructor(board, initDir) {
 		const startHead = new Cd(
 			Math.round(board.width / 2),
 			Math.round(board.height / 2)
 		);
 		const startTail = startHead.add(initDir.scale(-1));
-		this.body = [startTail, startHead];
+		super(startTail, startHead);
 		this.prevDir = initDir;
 		this.savedDir = initDir;
 	}
 	// head is a get/set property for the cd of the snake's head
-	get head() { return this.body[this.body.length - 1] }
-	set head(cd) { this.body.push(cd); }
-	removeTail() { this.body.shift(); }
+	get head() { return this[this.length - 1] }
+	set head(cd) { this.push(cd); }
+	removeTail() { this.shift(); }
 	testCollision() {
 		// search through the whole snake body for another instance of head
-		const i = this.body.findIndex((s) => s.equals(this.head));
-		return 0 <= i && i < this.body.length - 1;
+		const i = this.findIndex((s) => s.equals(this.head));
+		return 0 <= i && i < this.length - 1;
 	}
-	// the array of snake segment cds
-	body;
 	prevDir;
 	savedDir;
 }
@@ -221,7 +219,7 @@ class Food extends Cd {
 			for (let x = 0; x < board.width; x++) {
 				const cd = new Cd(x, y);
 				// as long as snake does not contain cd, add to whitelist
-				if (!snake.body.some((scd) => scd.equals(cd))) {
+				if (!snake.some((scd) => scd.equals(cd))) {
 					whitelist.push(cd);
 				}
 			}
@@ -273,7 +271,7 @@ class Game {
 
 		// draw snake
 		ctx.beginPath();
-		this.snake.body.forEach((segment) => {
+		this.snake.forEach((segment) => {
 			ctx.rect(
 					w * segment.x + this.board.origin.x,
 					w * segment.y + this.board.origin.y,
