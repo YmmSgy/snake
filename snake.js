@@ -17,8 +17,7 @@ class Controls {
 	onDpadChange = newDir => {};
 	onSelectChange = newState => {};
 
-	// setup method (to call at initialization)
-	init() {
+	constructor() {
 		// parses input into control events and changes control state
 		const receiveInput = (keyPressDir, key) => {
 			// translate key presses into axis changes
@@ -86,8 +85,9 @@ class MenuItem {
 class NavScreen {
 	items = [ /* array of MenuItems */ ];
 	cursor = 0;
+	
 	// initialize and show the screen
-	init() {
+	show() {
 		// reset cursor to first item
 		this.cursor = 0;
 
@@ -125,6 +125,10 @@ class TitleScreen extends NavScreen {
 		new MenuItem('HIGH SCORES', 1),
 		new MenuItem('OPTIONS', 2)
 	];
+	constructor() {
+		super();
+		this.show();
+	}
 	draw() {
 		// text preparations
 		ctx.textAlign = 'center';
@@ -144,7 +148,7 @@ class TitleScreen extends NavScreen {
 	};
 	select() {
 		switch (this.items[this.cursor].text) {
-			case 'START': game = new Game(); game.resume(); break;
+			case 'START': game = new Game(); break;
 			case 'HIGH SCORES': break;
 			case 'OPTIONS': break;
 			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`); 
@@ -237,6 +241,8 @@ class Game {
 		this.snake = new Snake(this.board, new Cd(0, -1));
 		this.food = new Food(this.board, this.snake);
 		this.score = 0;
+
+		this.resume();
 	}
 	board;
 	snake;
@@ -326,8 +332,7 @@ class Game {
 	}
 	pause() {
 		clearInterval(this.timer);
-		const gamePauseScr = new GamePauseScreen();
-		gamePauseScr.init();
+		new GamePauseScreen();
 	}
 	resume() {
 		// init controls
@@ -347,7 +352,7 @@ class Game {
 		controls.onDpadChange = () => {};
 		controls.onSelectChange = () => {};
 		clearInterval(this.timer);
-		setTimeout(() => { const gameOverScr = new GameOverScreen(this.score); gameOverScr.init(); }, 1500);
+		setTimeout(() => { new GameOverScreen(this.score); }, 1500);
 	}
 };
 
@@ -357,6 +362,10 @@ class GamePauseScreen extends NavScreen {
 		new MenuItem('CONTINUE', 0),
 		new MenuItem('MAIN MENU', 1)
 	];
+	constructor () {
+		super();
+		this.show();
+	}
 	draw() {
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
@@ -380,7 +389,7 @@ class GamePauseScreen extends NavScreen {
 	select() {
 		switch (this.items[this.cursor].text) {
 			case 'CONTINUE': game.resume(); break;
-			case 'MAIN MENU': titleScr.init(); break;
+			case 'MAIN MENU': new TitleScreen(); break;
 			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`);
 		}
 	};
@@ -391,6 +400,10 @@ class GameOverScreen extends NavScreen {
 		new MenuItem('PLAY AGAIN', 0),
 		new MenuItem('MAIN MENU', 1)
 	];
+	constructor () {
+		super();
+		this.show();
+	}
 	draw() {
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
@@ -413,8 +426,8 @@ class GameOverScreen extends NavScreen {
 	};
 	select() {
 		switch (this.items[this.cursor].text) {
-			case 'PLAY AGAIN': game.resume(); break;
-			case 'MAIN MENU': titleScr.init(); break;
+			case 'PLAY AGAIN': game = new Game(); break;
+			case 'MAIN MENU': new TitleScreen(); break;
 			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`); 
 		}
 	};
@@ -422,7 +435,5 @@ class GameOverScreen extends NavScreen {
 
 // init
 const controls = new Controls();
-const titleScr = new TitleScreen();
 let game;
-controls.init();
-titleScr.init();
+new TitleScreen();
