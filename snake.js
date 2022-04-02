@@ -163,8 +163,6 @@ class Cd {
 	add(other) { return new Cd(this.x + other.x, this.y + other.y); }
 	scale(factor) { return new Cd(this.x * factor, this.y * factor); }
 }
-function monoToCd(w, mono) { return new Cd(mono % w, Math.floor(mono / w)); }
-function cdToMono(w, cd) { return cd.x + cd.y * w; }
 class Board {
 	constructor(w, h) {
 		this.width = w;
