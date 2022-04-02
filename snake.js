@@ -81,7 +81,7 @@ class MenuItem {
 }
 
 // menu screens
-class NavScreen {
+class MenuScreen {
 	// array of MenuItems
 	items = [];
 	cursor = 0;
@@ -116,8 +116,7 @@ class NavScreen {
 	}
 }
 
-// title screen
-class TitleScreen extends NavScreen {
+class TitleScreen extends MenuScreen {
 	items = [
 		new MenuItem('START', 0),
 		new MenuItem('HIGH SCORES', 1),
@@ -354,8 +353,7 @@ class Game {
 	}
 };
 
-// game pause screen
-class GamePauseScreen extends NavScreen {
+class GamePauseScreen extends MenuScreen {
 	items = [
 		new MenuItem('CONTINUE', 0),
 		new MenuItem('MAIN MENU', 1)
@@ -393,7 +391,7 @@ class GamePauseScreen extends NavScreen {
 	};
 }
 
-class GameOverScreen extends NavScreen {
+class GameOverScreen extends MenuScreen {
 	items = [
 		new MenuItem('PLAY AGAIN', 0),
 		new MenuItem('MAIN MENU', 1)
