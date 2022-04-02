@@ -64,8 +64,7 @@ class Controls {
 	}
 }
 
-// title screen
-// constructor for menu screen item
+// menu screen item
 class MenuItem {
 	text;
 	index;
@@ -81,9 +80,10 @@ class MenuItem {
 	}
 }
 
-// base template for a navigable menu screen
+// menu screens
 class NavScreen {
-	items = [ /* array of MenuItems */ ];
+	// array of MenuItems
+	items = [];
 	cursor = 0;
 	
 	// initialize and show the screen
@@ -106,7 +106,6 @@ class NavScreen {
 		for (const item of this.items) { item.print('gray', y); }
 		this.items[this.cursor].print('white', y);
 	}
-	draw() { /* redraw the screen */ }
 	nav(dir) {
 		// wrap cursor and change selection
 		let count = this.items.length;
@@ -115,8 +114,7 @@ class NavScreen {
 		// redraw screen with new menu item highlight
 		this.draw();
 	}
-	select() { /* switch on the items */ }
-};
+}
 
 // title screen
 class TitleScreen extends NavScreen {
