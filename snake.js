@@ -298,7 +298,6 @@ class Game {
 	handleDpad(newDir) {
 		const newDirCd = new Cd(newDir.horizontal, -newDir.vertical);
 		if (
-				!newDirCd.equals(new Cd(0, 0)) &&
 				!newDirCd.equals(this.snake.prevDir.scale(-1)) &&
 				(
 					newDirCd.equals(new Cd( 1,  0)) ||
