@@ -153,6 +153,82 @@ class TitleScreen extends MenuScreen {
 	};
 }
 
+class GamePauseScreen extends MenuScreen {
+	items = [
+		new MenuItem('CONTINUE', 0),
+		new MenuItem('MAIN MENU', 1)
+	];
+	constructor () {
+		super();
+		this.show();
+	}
+	draw() {
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+
+		// clear whole screen
+		ctx.fillStyle = 'black';
+		ctx.fillRect(0, 0, cwidth, cheight);
+
+		// print paused
+		ctx.fillStyle = 'white';
+		ctx.font = 'bold 40px courier';
+		ctx.fillText('Paused', cwidth / 2, cheight / 5);
+
+		// print score
+		ctx.font = 'bold 20px courier';
+		ctx.fillText(`Score: ${game.score}`, cwidth / 2, cheight / 3);
+
+		// print items
+		this.drawItems(cheight / 2);
+	};
+	select() {
+		switch (this.items[this.cursor].text) {
+			case 'CONTINUE': game.resume(); break;
+			case 'MAIN MENU': new TitleScreen(); break;
+			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`);
+		}
+	};
+}
+
+class GameOverScreen extends MenuScreen {
+	items = [
+		new MenuItem('PLAY AGAIN', 0),
+		new MenuItem('MAIN MENU', 1)
+	];
+	constructor () {
+		super();
+		this.show();
+	}
+	draw() {
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+
+		// clear whole screen
+		ctx.fillStyle = 'black';
+		ctx.fillRect(0, 0, cwidth, cheight);
+
+		// print game over
+		ctx.fillStyle = 'white';
+		ctx.font = 'bold 40px courier';
+		ctx.fillText('Game Over', cwidth / 2, cheight / 5);
+
+		// print score
+		ctx.font = 'bold 20px courier';
+		ctx.fillText(`Score: ${game.score}`, cwidth / 2, cheight / 3);
+
+		// print items
+		this.drawItems(cheight / 2);
+	};
+	select() {
+		switch (this.items[this.cursor].text) {
+			case 'PLAY AGAIN': game = new Game(); break;
+			case 'MAIN MENU': new TitleScreen(); break;
+			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`); 
+		}
+	};
+}
+
 // game
 class Cd {
 	constructor(x, y) {
@@ -352,82 +428,6 @@ class Game {
 		setTimeout(() => { new GameOverScreen(this.score); }, 1500);
 	}
 };
-
-class GamePauseScreen extends MenuScreen {
-	items = [
-		new MenuItem('CONTINUE', 0),
-		new MenuItem('MAIN MENU', 1)
-	];
-	constructor () {
-		super();
-		this.show();
-	}
-	draw() {
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-
-		// clear whole screen
-		ctx.fillStyle = 'black';
-		ctx.fillRect(0, 0, cwidth, cheight);
-
-		// print paused
-		ctx.fillStyle = 'white';
-		ctx.font = 'bold 40px courier';
-		ctx.fillText('Paused', cwidth / 2, cheight / 5);
-
-		// print score
-		ctx.font = 'bold 20px courier';
-		ctx.fillText(`Score: ${game.score}`, cwidth / 2, cheight / 3);
-
-		// print items
-		this.drawItems(cheight / 2);
-	};
-	select() {
-		switch (this.items[this.cursor].text) {
-			case 'CONTINUE': game.resume(); break;
-			case 'MAIN MENU': new TitleScreen(); break;
-			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`);
-		}
-	};
-}
-
-class GameOverScreen extends MenuScreen {
-	items = [
-		new MenuItem('PLAY AGAIN', 0),
-		new MenuItem('MAIN MENU', 1)
-	];
-	constructor () {
-		super();
-		this.show();
-	}
-	draw() {
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-
-		// clear whole screen
-		ctx.fillStyle = 'black';
-		ctx.fillRect(0, 0, cwidth, cheight);
-
-		// print game over
-		ctx.fillStyle = 'white';
-		ctx.font = 'bold 40px courier';
-		ctx.fillText('Game Over', cwidth / 2, cheight / 5);
-
-		// print score
-		ctx.font = 'bold 20px courier';
-		ctx.fillText(`Score: ${game.score}`, cwidth / 2, cheight / 3);
-
-		// print items
-		this.drawItems(cheight / 2);
-	};
-	select() {
-		switch (this.items[this.cursor].text) {
-			case 'PLAY AGAIN': game = new Game(); break;
-			case 'MAIN MENU': new TitleScreen(); break;
-			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`); 
-		}
-	};
-}
 
 // init
 const controls = new Controls();
