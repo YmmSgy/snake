@@ -3,6 +3,7 @@
 const ctx = document.getElementById('canvas').getContext('2d');
 const cwidth = ctx.canvas.width;
 const cheight = ctx.canvas.height;
+let controls;
 
 // controls
 class Controls {
@@ -416,5 +417,5 @@ class Game {
 }
 
 // init
-const controls = new Controls();
+controls = new Controls();
 new TitleScreen();
