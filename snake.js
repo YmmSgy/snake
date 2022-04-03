@@ -17,7 +17,7 @@ class Controls {
 	onDpadChange = newDir => {};
 	onSelectChange = newState => {};
 
-	constructor() {
+	constructor () {
 		// parses input into control events and changes control state
 		const receiveInput = (keyPressDir, key) => {
 			// translate key presses into axis changes
@@ -35,7 +35,7 @@ class Controls {
 				}
 				// fire the payload event stored in .onDpadChange()
 				this.onDpadChange(this.#dpadState);
-			}
+			};
 
 			// determine which control changed and fire corresponding event
 			switch (key) {
@@ -52,13 +52,13 @@ class Controls {
 					break;
 				default:
 			}
-		}
+		};
 
 		// register for keyboard events
-		document.addEventListener('keydown', (e) => {
+		document.addEventListener('keydown', e => {
 			if (!e.repeat) receiveInput('keydown', e.code);
 		});
-		document.addEventListener('keyup', (e) => {
+		document.addEventListener('keyup', e => {
 			receiveInput('keyup', e.code);
 		});
 	}
@@ -68,7 +68,7 @@ class Controls {
 class MenuItem {
 	text;
 	onSelect;
-	constructor(text, onSelectFn) {
+	constructor (text, onSelectFn) {
 		this.text = text;
 		this.onSelect = onSelectFn;
 	}
@@ -100,7 +100,7 @@ class MenuScreen {
 		}
 	}
 	initControls() {
-		const nav = (dir) => {
+		const nav = dir => {
 			// wrap cursor and change selection
 			let count = this.items.length;
 			this.cursor = (((this.cursor - dir) % count) + count) % count;
@@ -109,10 +109,10 @@ class MenuScreen {
 			this.draw();
 		};
 
-		controls.onDpadChange = (newDir) => {
+		controls.onDpadChange = newDir => {
 			if (newDir.vertical !== 0) nav(newDir.vertical);
 		};
-		controls.onSelectChange = (newState) => {
+		controls.onSelectChange = newState => {
 			if (newState === 'keydown') this.items[this.cursor].onSelect();
 		};
 	}
@@ -125,7 +125,7 @@ class TitleScreen extends MenuScreen {
 		new MenuItem('OPTIONS', () => {})
 	];
 	itemsOffset = cheight / 2;
-	constructor() {
+	constructor () {
 		super();
 		this.draw();
 		this.initControls();
@@ -217,7 +217,7 @@ class GameOverScreen extends MenuScreen {
 
 // game
 class Cd {
-	constructor(x, y) {
+	constructor (x, y) {
 		this.x = x;
 		this.y = y;
 	}
@@ -227,7 +227,7 @@ class Cd {
 	scale(factor) { return new Cd(this.x * factor, this.y * factor); }
 }
 class Board {
-	constructor(w, h) {
+	constructor (w, h) {
 		this.width = w;
 		this.height = h;
 		this.tileSize = Math.floor(cwidth / this.width);
@@ -246,7 +246,7 @@ class Board {
 	}
 }
 class Snake extends Array {
-	constructor(board, initDir) {
+	constructor (board, initDir) {
 		const startHead = new Cd(
 			Math.round(board.width / 2),
 			Math.round(board.height / 2)
@@ -262,27 +262,27 @@ class Snake extends Array {
 	removeTail() { this.shift(); }
 	testCollision() {
 		// search through the whole snake body for another instance of head
-		const i = this.findIndex((s) => s.equals(this.head));
+		const i = this.findIndex(s => s.equals(this.head));
 		return 0 <= i && i < this.length - 1;
 	}
 	prevDir;
 	savedDir;
 }
 class NoTilesLeftError extends Error {
-	constructor(message) {
+	constructor (message) {
 		super(message);
 		this.name = this.constructor.name;
 	}
 }
 class Food extends Cd {
-	constructor(board, snake) {
+	constructor (board, snake) {
 		const whitelist = [];
 
 		for (let y = 0; y < board.height; y++) {
 			for (let x = 0; x < board.width; x++) {
 				const cd = new Cd(x, y);
 				// as long as snake does not contain cd, add to whitelist
-				if (!snake.some((scd) => scd.equals(cd))) {
+				if (!snake.some(scd => scd.equals(cd))) {
 					whitelist.push(cd);
 				}
 			}
@@ -295,7 +295,7 @@ class Food extends Cd {
 	}
 }
 class Game {
-	constructor() {
+	constructor () {
 		this.board = new Board(20, 19);
 		this.snake = new Snake(this.board, new Cd(0, -1));
 		this.food = new Food(this.board, this.snake);
@@ -336,7 +336,7 @@ class Game {
 
 		// draw snake
 		ctx.beginPath();
-		this.snake.forEach((segment) => {
+		this.snake.forEach(segment => {
 			ctx.rect(
 					w * segment.x + this.board.origin.x,
 					w * segment.y + this.board.origin.y,
