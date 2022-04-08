@@ -32,7 +32,7 @@ class Controls {
 					this.#dpadState[axis] -= limit;
 				}
 				else {
-					console.log('error: invalid keyPressDir');
+					throw new Error('invalid keyPressDir');
 				}
 				// fire the payload event stored in .onDpadChange()
 				this.onDpadChange(this.#dpadState);
@@ -269,12 +269,6 @@ class Snake extends Array {
 	prevDir;
 	savedDir;
 }
-class NoTilesLeftError extends Error {
-	constructor (message) {
-		super(message);
-		this.name = this.constructor.name;
-	}
-}
 class Food extends Cd {
 	constructor (board, snake) {
 		const whitelist = [];
@@ -289,7 +283,7 @@ class Food extends Cd {
 			}
 		}
 
-		if (whitelist.length === 0) throw new NoTilesLeftError();
+		if (whitelist.length === 0) throw new Error('no tiles left to generate food');
 
 		const foodCd = whitelist[Math.floor(Math.random() * whitelist.length)];
 		super(foodCd.x, foodCd.y);
@@ -380,7 +374,7 @@ class Game {
 			this.drawScore();
 			try { this.food = new Food(this.board, this.snake); }
 			catch (e) {
-				if (e instanceof NoTilesLeftError) this.end();
+				this.end();
 			}
 		}
 		else { this.snake.removeTail(); }
