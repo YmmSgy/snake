@@ -3,40 +3,40 @@
 const ctx = document.getElementById('canvas').getContext('2d');
 const cwidth = ctx.canvas.width;
 const cheight = ctx.canvas.height;
+let controls;
 
 // controls
-const controls = {
+class Controls {
 	// control states
-	dpadState: {
+	#dpadState = {
 		vertical: 0,
 		horizontal: 0
-	},
-	selectBtnState: 'keyup',
+	};
+	#selectBtnState = 'keyup';
 
 	// control events
-	onDpadChange: newDir => {},
-	onSelectChange: newState => {},
+	onDpadChange = newDir => {};
+	onSelectChange = newState => {};
 
-	// setup method (to call at initialization)
-	init() {
+	constructor () {
 		// parses input into control events and changes control state
-		function receiveInput(keyPressDir, key) {
+		const receiveInput = (keyPressDir, key) => {
 			// translate key presses into axis changes
-			function btnToAxis(axis, limit) {
+			const btnToAxis = (axis, limit) => {
 				if (keyPressDir === 'keydown') {
-					if (controls.dpadState[axis] === limit) return;
-					controls.dpadState[axis] += limit;
+					if (this.#dpadState[axis] === limit) return;
+					this.#dpadState[axis] += limit;
 				}
 				else if (keyPressDir === 'keyup') {
-					if (controls.dpadState[axis] === -limit) return;
-					controls.dpadState[axis] -= limit;
+					if (this.#dpadState[axis] === -limit) return;
+					this.#dpadState[axis] -= limit;
 				}
 				else {
-					console.log('error: invalid keyPressDir');
+					throw new Error('invalid keyPressDir');
 				}
 				// fire the payload event stored in .onDpadChange()
-				controls.onDpadChange(controls.dpadState);
-			}
+				this.onDpadChange(this.#dpadState);
+			};
 
 			// determine which control changed and fire corresponding event
 			switch (key) {
@@ -45,91 +45,98 @@ const controls = {
 				case 'KeyS': btnToAxis('vertical', -1); break;
 				case 'KeyD': btnToAxis('horizontal', 1); break;
 				case 'Space':
-					if (keyPressDir !== controls.selectBtnState) {
-						controls.selectBtnState = keyPressDir;
+					if (keyPressDir !== this.#selectBtnState) {
+						this.#selectBtnState = keyPressDir;
 						// fire the payload event stored in .onSelectChange()
-						controls.onSelectChange(keyPressDir);
+						this.onSelectChange(keyPressDir);
 					}
 					break;
 				default:
 			}
-		}
+		};
 
 		// register for keyboard events
-		document.addEventListener('keydown', function (e) {
+		document.addEventListener('keydown', e => {
 			if (!e.repeat) receiveInput('keydown', e.code);
 		});
-		document.addEventListener('keyup', function (e) {
+		document.addEventListener('keyup', e => {
 			receiveInput('keyup', e.code);
 		});
 	}
-};
-
-// title screen
-// constructor for menu screen item
-function MenuItem(text, index) {
-	this.text = text;
-	this.index = index;
-	this.print = function(colour, y) {
-		const itemSpacing = 30;
-		ctx.font = 'bold 20px courier';
-		ctx.fillStyle = colour;
-		ctx.fillText(text, cwidth / 2, y + itemSpacing * index);
-	};
 }
 
-// base template for a navigable menu screen
-const navScr = {
-	items: [ /* array of MenuItems */ ],
-	cursor: 0,
-	// initialize and show the screen
-	init() {
-		// reset cursor to first item
-		this.cursor = 0;
+// menu screen item
+class MenuItem {
+	text;
+	onSelect;
+	constructor (text, onSelectFn) {
+		this.text = text;
+		this.onSelect = onSelectFn;
+	}
+}
 
-		// draw title screen
-		this.draw();
+// menu screens
+class MenuScreen {
+	items = [];
+	cursor = 0;
+	itemsOffset;
+	itemsSpacing = 30;
+	clearScreen() {
+		ctx.fillStyle = 'black';
+		ctx.fillRect(0, 0, cwidth, cheight);
+	}
+	drawItems() {
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.font = 'bold 20px courier';
+		for (let i = 0; i < this.items.length; i++) {
+			if (i === this.cursor) { ctx.fillStyle = 'white'; }
+			else { ctx.fillStyle = 'gray'; }
 
-		// set title screen control profile
-		controls.onDpadChange = (newDir) => {
-			if (newDir.vertical !== 0) this.nav(newDir.vertical);
+			ctx.fillText(
+				this.items[i].text,
+				cwidth / 2,
+				this.itemsOffset + this.itemsSpacing * i
+			);
+		}
+	}
+	initControls() {
+		const nav = dir => {
+			// wrap cursor and change selection
+			let count = this.items.length;
+			this.cursor = (((this.cursor - dir) % count) + count) % count;
+
+			// redraw screen with new menu item highlight
+			this.draw();
 		};
-		controls.onSelectChange = (newState) => {
-			if (newState === 'keydown') this.select();
+
+		controls.onDpadChange = newDir => {
+			if (newDir.vertical !== 0) nav(newDir.vertical);
 		};
-	},
-	drawItems(y) {
-		for (const item of this.items) { item.print('gray', y); }
-		this.items[this.cursor].print('white', y);
-	},
-	draw() { /* redraw the screen */ },
-	nav(dir) {
-		// wrap cursor and change selection
-		let count = this.items.length;
-		this.cursor = (((this.cursor - dir) % count) + count) % count;
+		controls.onSelectChange = newState => {
+			if (newState === 'keydown') this.items[this.cursor].onSelect();
+		};
+	}
+}
 
-		// redraw screen with new menu item highlight
-		this.draw();
-	},
-	select() { /* switch on the items */ }
-};
-
-// title screen
-const titleScr = Object.create(navScr);
-{
-	titleScr.items = [
-		new MenuItem('START', 0),
-		new MenuItem('HIGH SCORES', 1),
-		new MenuItem('OPTIONS', 2)
+class TitleScreen extends MenuScreen {
+	items = [
+		new MenuItem('START', () => new Game()),
+		new MenuItem('HIGH SCORES', () => {}),
+		new MenuItem('OPTIONS', () => {})
 	];
-	titleScr.draw = function () {
+	itemsOffset = cheight / 2;
+	constructor () {
+		super();
+		this.draw();
+		this.initControls();
+	}
+	draw() {
+		this.clearScreen();
+
 		// text preparations
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-
-		// background
-		ctx.fillStyle = 'black';
-		ctx.fillRect(0, 0, cwidth, cheight);
 
 		// main title
 		ctx.fillStyle = 'white';
@@ -137,223 +144,30 @@ const titleScr = Object.create(navScr);
 		ctx.fillText('Snake', cwidth / 2, cheight / 5);
 
 		// menu items
-		this.drawItems(cheight / 2);
-	};
-	titleScr.select = function () {
-		switch (this.items[this.cursor].text) {
-			case 'START': game.start(); break;
-			case 'HIGH SCORES': break;
-			case 'OPTIONS': break;
-			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`); 
-		}
-	};
-}
-
-// game
-function Cd(x, y) {
-	this.x = x;
-	this.y = y;
-	this.equals = other => this.x === other.x && this.y === other.y;
-	this.add = other => new Cd(this.x + other.x, this.y + other.y);
-	this.scale = factor => new Cd(this.x * factor, this.y * factor);
-}
-function monoToCd(w, mono) { return new Cd(mono % w, Math.floor(mono / w)); }
-function cdToMono(w, cd) { return cd.x + cd.y * w; }
-const game = {
-	boardWidth: 20,
-	boardHeight: 19,
-	getTileSize() { return Math.floor(cwidth / game.boardWidth); },
-	getBoardOrigin() { return new Cd(0, game.getTileSize()); },
-	turnDelay: 350,
-
-	timer: undefined,
-	score: 0,
-	savedDir: undefined,
-	prevDir: undefined,
-	canPause: false,
-	wrapSnake(cd) {
-		if (cd.x < 0) { cd.x = game.boardWidth - 1; }
-		else if (cd.x > game.boardWidth - 1) { cd.x = 0; }
-		if (cd.y < 0) { cd.y = game.boardHeight - 1; }
-		else if (cd.y > game.boardHeight - 1) { cd.y = 0; }
-		return cd;
-	},
-	snake: {
-		// head is a get/set property for the cd of the snake's head
-		getHead() { return this.body[this.body.length - 1] },
-		setHead(cd) { this.body.push(cd); },
-		removeTail() { this.body.shift(); },
-		testCollision() {
-			// search through the whole snake body for another instance of head
-			const i = this.body.findIndex((s) => s.equals(this.getHead()));
-			return 0 <= i && i < this.body.length - 1;
-		},
-		// the array of snake segment cds
-		body: undefined
-	},
-	food: {
-		pos: undefined,
-		make() {
-			const whitelist = [];
-
-			for (let y = 0; y < game.boardHeight; y++) {
-				for (let x = 0; x < game.boardWidth; x++) {
-					const cd = new Cd(x, y);
-					// as long as snake does not contain cd, add to whitelist
-					if (!game.snake.body.some((scd) => scd.equals(cd))) {
-						whitelist.push(cd);
-					}
-				}
-			}
-
-			if (whitelist.length === 0) {
-				// no tiles left to create new food
-				game.end();
-				return;
-			}
-
-			this.pos = whitelist[Math.floor(Math.random() * whitelist.length)];
-		}
-	},
-	drawBoard() {
-		const w = game.getTileSize();
-
-		// fill with background
-		ctx.fillStyle = 'black';
-		ctx.fillRect(
-				game.getBoardOrigin().x,
-				game.getBoardOrigin().y,
-				game.boardWidth * w,
-				game.boardHeight * w
-		);
-
-		// draw food
-		const f = game.food.pos;
-		ctx.beginPath();
-		ctx.arc(
-				w * f.x + w / 2 + game.getBoardOrigin().x,
-				w * f.y + w / 2 + game.getBoardOrigin().y,
-				w / 2,
-				0, 2 * Math.PI, false
-		);
-		ctx.fillStyle = 'yellow';
-		ctx.fill();
-
-		// draw snake
-		ctx.beginPath();
-		game.snake.body.forEach(function (segment, i, body) {
-			ctx.rect(
-					w * segment.x + game.getBoardOrigin().x,
-					w * segment.y + game.getBoardOrigin().y,
-					w, w
-			);
-		});
-		ctx.fillStyle = 'red';
-		ctx.fill();
-	},
-	drawScore() {
-		// clear the score area
-		ctx.fillStyle = 'midnightblue';
-		ctx.fillRect(0, 0, cwidth, game.getTileSize());
-
-		// print the score
-		ctx.fillStyle = 'white';
-		ctx.textAlign = 'left';
-		ctx.textBaseline = 'middle';
-		ctx.font = `bold ${game.getTileSize() - 4}px courier`;
-		ctx.fillText(`Score: ${game.score}`, 4, game.getTileSize() / 2);
-	},
-	changeDir(newDir) {
-		const newDirCd = new Cd(newDir.horizontal, -newDir.vertical);
-		if (
-				!newDirCd.equals(new Cd(0, 0)) &&
-				!newDirCd.equals(game.prevDir.scale(-1)) &&
-				(
-					newDirCd.equals(new Cd( 1,  0)) ||
-					newDirCd.equals(new Cd(-1,  0)) ||
-					newDirCd.equals(new Cd( 0,  1)) ||
-					newDirCd.equals(new Cd( 0, -1))
-				)
-		) { game.savedDir = newDirCd; }
-	},
-	start() {
-		// init properties
-		game.snake.body = [];
-		game.score = 0;
-		game.savedDir = new Cd(0, -1);
-		game.prevDir = new Cd(0, -1);
-		game.canPause = true;
-
-		// init the snake
-		game.snake.body.push(new Cd(
-				Math.round(game.boardWidth / 2),
-				Math.round(game.boardHeight / 2)
-		));
-		game.snake.body.unshift(game.snake.body[0].add(game.savedDir.scale(-1)));
-
-		// generate first food
-		game.food.make();
-
-		game.resume();
-	},
-	turn() {
-		game.prevDir = game.savedDir;
-		game.snake.setHead(
-			game.wrapSnake(game.snake.getHead().add(game.savedDir))
-		);
-		if (game.snake.getHead().equals(game.food.pos)) {
-			++game.score;
-			// update score display when score changes
-			game.drawScore();
-			game.food.make();
-		}
-		else { game.snake.removeTail(); }
-
-		// draw game screen
-		game.drawBoard();
-
-		if (game.snake.testCollision()) { game.end(); }
-	},
-	pause() {
-		if (!game.canPause) return;
-		clearInterval(game.timer);
-		gamePauseScr.init();
-	},
-	resume() {
-		// init controls
-		controls.onDpadChange = game.changeDir;
-		controls.onSelectChange = newState => { if (newState === 'keydown') game.pause(); };
-
-		// draw game board
-		game.drawBoard();
-
-		// draw score header
-		game.drawScore();
-
-		// start turn system
-		game.timer = setInterval(() => { game.turn(); }, game.turnDelay);
-	},
-	end() {
-		game.canPause = false;
-		clearInterval(game.timer);
-		setTimeout(() => { gameOverScr.init(); }, 1500);
+		this.drawItems();
 	}
-};
+}
 
-// game pause screen
-const gamePauseScr = Object.create(navScr);
-{
-	gamePauseScr.items = [
-		new MenuItem('CONTINUE', 0),
-		new MenuItem('MAIN MENU', 1)
+class GamePauseScreen extends MenuScreen {
+	items = [
+		new MenuItem('CONTINUE', () => this.#gameObj.resume()),
+		new MenuItem('MAIN MENU', () => new TitleScreen())
 	];
-	gamePauseScr.draw = function () {
+	itemsOffset = cheight / 2;
+	#gameObj;
+	#score;
+	constructor (gameObj, score) {
+		super();
+		this.#gameObj = gameObj;
+		this.#score = score;
+		this.draw();
+		this.initControls();
+	}
+	draw() {
+		this.clearScreen();
+
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-
-		// clear whole screen
-		ctx.fillStyle = 'black';
-		ctx.fillRect(0, 0, cwidth, cheight);
 
 		// print paused
 		ctx.fillStyle = 'white';
@@ -362,33 +176,31 @@ const gamePauseScr = Object.create(navScr);
 
 		// print score
 		ctx.font = 'bold 20px courier';
-		ctx.fillText(`Score: ${game.score}`, cwidth / 2, cheight / 3);
+		ctx.fillText(`Score: ${this.#score}`, cwidth / 2, cheight / 3);
 
 		// print items
-		this.drawItems(cheight / 2);
-	};
-	gamePauseScr.select = function () {
-		switch (this.items[this.cursor].text) {
-			case 'CONTINUE': game.resume(); break;
-			case 'MAIN MENU': titleScr.init(); break;
-			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`);
-		}
-	};
+		this.drawItems();
+	}
 }
 
-const gameOverScr = Object.create(navScr);
-{
-	gameOverScr.items = [
-		new MenuItem('PLAY AGAIN', 0),
-		new MenuItem('MAIN MENU', 1)
+class GameOverScreen extends MenuScreen {
+	items = [
+		new MenuItem('PLAY AGAIN', () => new Game()),
+		new MenuItem('MAIN MENU', () => new TitleScreen())
 	];
-	gameOverScr.draw = function () {
+	itemsOffset = cheight / 2;
+	#score;
+	constructor (score) {
+		super();
+		this.#score = score;
+		this.draw();
+		this.initControls();
+	}
+	draw() {
+		this.clearScreen();
+
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-
-		// clear whole screen
-		ctx.fillStyle = 'black';
-		ctx.fillRect(0, 0, cwidth, cheight);
 
 		// print game over
 		ctx.fillStyle = 'white';
@@ -397,20 +209,207 @@ const gameOverScr = Object.create(navScr);
 
 		// print score
 		ctx.font = 'bold 20px courier';
-		ctx.fillText(`Score: ${game.score}`, cwidth / 2, cheight / 3);
+		ctx.fillText(`Score: ${this.#score}`, cwidth / 2, cheight / 3);
 
 		// print items
-		this.drawItems(cheight / 2);
-	};
-	gameOverScr.select = function () {
-		switch (this.items[this.cursor].text) {
-			case 'PLAY AGAIN': game.start(); break;
-			case 'MAIN MENU': titleScr.init(); break;
-			default: console.log(`error: ${this.items[this.cursor].text} is not a valid menu option`); 
+		this.drawItems();
+	}
+}
+
+// game
+class Cd {
+	constructor (x, y) {
+		this.x = x;
+		this.y = y;
+	}
+	x; y;
+	equals(other) { return this.x === other.x && this.y === other.y; }
+	add(other) { return new Cd(this.x + other.x, this.y + other.y); }
+	scale(factor) { return new Cd(this.x * factor, this.y * factor); }
+}
+class Board {
+	constructor (w, h) {
+		this.width = w;
+		this.height = h;
+		this.tileSize = Math.floor(cwidth / this.width);
+		this.origin = new Cd(0, this.tileSize);
+	}
+	width = 20;
+	height = 19;
+	tileSize;
+	origin;
+	wrap(cd) {
+		if (cd.x < 0) { cd.x = this.width - 1; }
+		else if (cd.x > this.width - 1) { cd.x = 0; }
+		if (cd.y < 0) { cd.y = this.height - 1; }
+		else if (cd.y > this.height - 1) { cd.y = 0; }
+		return cd;
+	}
+}
+class Snake extends Array {
+	constructor (board, initDir) {
+		const startHead = new Cd(
+			Math.round(board.width / 2),
+			Math.round(board.height / 2)
+		);
+		const startTail = startHead.add(initDir.scale(-1));
+		super(startTail, startHead);
+		this.prevDir = initDir;
+		this.savedDir = initDir;
+	}
+	// head is a get/set property for the cd of the snake's head
+	get head() { return this[this.length - 1] }
+	set head(cd) { this.push(cd); }
+	removeTail() { this.shift(); }
+	testCollision() {
+		// search through the whole snake body for another instance of head
+		const i = this.findIndex(s => s.equals(this.head));
+		return 0 <= i && i < this.length - 1;
+	}
+	prevDir;
+	savedDir;
+}
+class Food extends Cd {
+	constructor (board, snake) {
+		const whitelist = [];
+
+		for (let y = 0; y < board.height; y++) {
+			for (let x = 0; x < board.width; x++) {
+				const cd = new Cd(x, y);
+				// as long as snake does not contain cd, add to whitelist
+				if (!snake.some(scd => scd.equals(cd))) {
+					whitelist.push(cd);
+				}
+			}
 		}
-	};
+
+		if (whitelist.length === 0) throw new Error('no tiles left to generate food');
+
+		const foodCd = whitelist[Math.floor(Math.random() * whitelist.length)];
+		super(foodCd.x, foodCd.y);
+	}
+}
+class Game {
+	constructor () {
+		this.board = new Board(20, 19);
+		this.snake = new Snake(this.board, new Cd(0, -1));
+		this.food = new Food(this.board, this.snake);
+		this.score = 0;
+
+		this.resume();
+	}
+	board;
+	snake;
+	food;
+	turnDelay = 350;
+	timer;
+	score;
+
+	drawBoard() {
+		const w = this.board.tileSize;
+
+		// fill with background
+		ctx.fillStyle = 'black';
+		ctx.fillRect(
+				this.board.origin.x,
+				this.board.origin.y,
+				this.board.width * w,
+				this.board.height * w
+		);
+
+		// draw food
+		const f = this.food;
+		ctx.beginPath();
+		ctx.arc(
+				w * f.x + w / 2 + this.board.origin.x,
+				w * f.y + w / 2 + this.board.origin.y,
+				w / 2,
+				0, 2 * Math.PI, false
+		);
+		ctx.fillStyle = 'yellow';
+		ctx.fill();
+
+		// draw snake
+		ctx.beginPath();
+		this.snake.forEach(segment => {
+			ctx.rect(
+					w * segment.x + this.board.origin.x,
+					w * segment.y + this.board.origin.y,
+					w, w
+			);
+		});
+		ctx.fillStyle = 'red';
+		ctx.fill();
+	}
+	drawScore() {
+		// clear the score area
+		ctx.fillStyle = 'midnightblue';
+		ctx.fillRect(0, 0, cwidth, this.board.tileSize);
+
+		// print the score
+		ctx.fillStyle = 'white';
+		ctx.textAlign = 'left';
+		ctx.textBaseline = 'middle';
+		ctx.font = `bold ${this.board.tileSize - 4}px courier`;
+		ctx.fillText(`Score: ${this.score}`, 4, this.board.tileSize / 2);
+	}
+	handleDpad(newDir) {
+		const newDirCd = new Cd(newDir.horizontal, -newDir.vertical);
+		if (
+				!newDirCd.equals(this.snake.prevDir.scale(-1)) &&
+				(
+					newDirCd.equals(new Cd( 1,  0)) ||
+					newDirCd.equals(new Cd(-1,  0)) ||
+					newDirCd.equals(new Cd( 0,  1)) ||
+					newDirCd.equals(new Cd( 0, -1))
+				)
+		) { this.snake.savedDir = newDirCd; }
+	}
+	turn() {
+		this.snake.prevDir = this.snake.savedDir;
+		this.snake.head = this.board.wrap(this.snake.head.add(this.snake.savedDir));
+		if (this.snake.head.equals(this.food)) {
+			++this.score;
+			// update score display when score changes
+			this.drawScore();
+			try { this.food = new Food(this.board, this.snake); }
+			catch (e) {
+				this.end();
+			}
+		}
+		else { this.snake.removeTail(); }
+
+		// draw game screen
+		this.drawBoard();
+
+		if (this.snake.testCollision()) { this.end(); }
+	}
+	pause() {
+		clearInterval(this.timer);
+		new GamePauseScreen(this, this.score);
+	}
+	resume() {
+		// init controls
+		controls.onDpadChange = newDir => this.handleDpad(newDir);
+		controls.onSelectChange = newState => { if (newState === 'keydown') this.pause(); };
+
+		// draw game board
+		this.drawBoard();
+
+		// draw score header
+		this.drawScore();
+
+		// start turn system
+		this.timer = setInterval(() => { this.turn(); }, this.turnDelay);
+	}
+	end() {
+		controls.onDpadChange = () => {};
+		controls.onSelectChange = () => {};
+		clearInterval(this.timer);
+		setTimeout(() => { new GameOverScreen(this.score); }, 1500);
+	}
 }
 
 // init
-controls.init();
-titleScr.init();
+controls = new Controls();
+new TitleScreen();
