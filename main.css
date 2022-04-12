@@ -4,16 +4,14 @@
 	border: none;
 	outline: none;
 }
-html {
+html, body {
 	height: 100%;
 	width: 100%;
 }
-body {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
 canvas {
+	display: block;
+	object-fit: contain;
+	height: 100%;
+	width: 100%;
     image-rendering: pixelated;
 }

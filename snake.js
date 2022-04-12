@@ -1,8 +1,7 @@
 'use strict';
 
 const ctx = document.getElementById('canvas').getContext('2d');
-const cwidth = ctx.canvas.width;
-const cheight = ctx.canvas.height;
+let cwidth, cheight;
 let controls;
 
 // controls
@@ -80,7 +79,7 @@ class MenuScreen {
 	items = [];
 	cursor = 0;
 	itemsOffset;
-	itemsSpacing = 30;
+	itemsSpacing = cheight / 12;
 	clearScreen() {
 		ctx.fillStyle = 'black';
 		ctx.fillRect(0, 0, cwidth, cheight);
@@ -88,7 +87,7 @@ class MenuScreen {
 	drawItems() {
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
-		ctx.font = 'bold 20px courier';
+		ctx.font = `bold ${cheight / 20}px courier`;
 		for (let i = 0; i < this.items.length; i++) {
 			if (i === this.cursor) { ctx.fillStyle = 'white'; }
 			else { ctx.fillStyle = 'gray'; }
@@ -140,7 +139,7 @@ class TitleScreen extends MenuScreen {
 
 		// main title
 		ctx.fillStyle = 'white';
-		ctx.font = 'bold 50px courier';
+		ctx.font = `bold ${cheight / 8}px courier`;
 		ctx.fillText('Snake', cwidth / 2, cheight / 5);
 
 		// menu items
@@ -171,11 +170,11 @@ class GamePauseScreen extends MenuScreen {
 
 		// print paused
 		ctx.fillStyle = 'white';
-		ctx.font = 'bold 40px courier';
+		ctx.font = `bold ${cheight / 10}px courier`;
 		ctx.fillText('Paused', cwidth / 2, cheight / 5);
 
 		// print score
-		ctx.font = 'bold 20px courier';
+		ctx.font = `bold ${cheight / 20}px courier`;
 		ctx.fillText(`Score: ${this.#score}`, cwidth / 2, cheight / 3);
 
 		// print items
@@ -204,11 +203,11 @@ class GameOverScreen extends MenuScreen {
 
 		// print game over
 		ctx.fillStyle = 'white';
-		ctx.font = 'bold 40px courier';
+		ctx.font = `bold ${cheight / 10}px courier`;
 		ctx.fillText('Game Over', cwidth / 2, cheight / 5);
 
 		// print score
-		ctx.font = 'bold 20px courier';
+		ctx.font = `bold ${cheight / 20}px courier`;
 		ctx.fillText(`Score: ${this.#score}`, cwidth / 2, cheight / 3);
 
 		// print items
@@ -411,5 +410,10 @@ class Game {
 }
 
 // init
+cwidth = cheight = ctx.canvas.width = ctx.canvas.height =
+Math.min(
+	document.documentElement.clientWidth,
+	document.documentElement.clientHeight
+);
 controls = new Controls();
 new TitleScreen();
