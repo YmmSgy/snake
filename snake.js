@@ -353,18 +353,6 @@ class Game {
 		ctx.font = `bold ${this.board.tileSize - 4}px courier`;
 		ctx.fillText(`Score: ${this.score}`, 4, this.board.tileSize / 2);
 	}
-	handleDpad(newDir) {
-		const newDirCd = new Cd(newDir.horizontal, -newDir.vertical);
-		if (
-				!newDirCd.equals(this.snake.prevDir.scale(-1)) &&
-				(
-					newDirCd.equals(new Cd( 1,  0)) ||
-					newDirCd.equals(new Cd(-1,  0)) ||
-					newDirCd.equals(new Cd( 0,  1)) ||
-					newDirCd.equals(new Cd( 0, -1))
-				)
-		) { this.snake.savedDir = newDirCd; }
-	}
 	turn() {
 		this.snake.prevDir = this.snake.savedDir;
 		this.snake.head = this.board.wrap(this.snake.head.add(this.snake.savedDir));
@@ -389,8 +377,20 @@ class Game {
 		new GamePauseScreen(this, this.score);
 	}
 	resume() {
+		const handleDpad = (newDir) => {
+			const newDirCd = new Cd(newDir.horizontal, -newDir.vertical);
+			if (
+					!newDirCd.equals(this.snake.prevDir.scale(-1)) &&
+					(
+						newDirCd.equals(new Cd( 1,  0)) ||
+						newDirCd.equals(new Cd(-1,  0)) ||
+						newDirCd.equals(new Cd( 0,  1)) ||
+						newDirCd.equals(new Cd( 0, -1))
+					)
+			) { this.snake.savedDir = newDirCd; }
+		};
 		// init controls
-		controls.onDpadChange = newDir => this.handleDpad(newDir);
+		controls.onDpadChange = newDir => handleDpad(newDir);
 		controls.onSelectChange = newState => { if (newState === 'keydown') this.pause(); };
 
 		// draw game board
