@@ -74,17 +74,23 @@ class MenuItem {
 	}
 }
 
+class RedrawableScreen {
+	static curScreen;
+	redraw() { RedrawableScreen.curScreen = this; }
+}
+
 // menu screens
-class MenuScreen {
+class MenuScreen extends RedrawableScreen {
 	items = [];
 	cursor = 0;
 	itemsOffset;
-	itemsSpacing = cheight / 12;
+	itemsSpacing;
 	clearScreen() {
 		ctx.fillStyle = 'black';
 		ctx.fillRect(0, 0, cwidth, cheight);
 	}
 	drawItems() {
+		this.itemsSpacing = cheight / 12;
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
 		ctx.font = `bold ${cheight / 20}px courier`;
@@ -106,7 +112,7 @@ class MenuScreen {
 			this.cursor = (((this.cursor - dir) % count) + count) % count;
 
 			// redraw screen with new menu item highlight
-			this.draw();
+			this.redraw();
 		};
 
 		controls.onDpadChange = newDir => {
@@ -124,13 +130,14 @@ class TitleScreen extends MenuScreen {
 		new MenuItem('HIGH SCORES', () => {}),
 		new MenuItem('OPTIONS', () => {})
 	];
-	itemsOffset = cheight / 2;
 	constructor () {
 		super();
-		this.draw();
+		this.redraw();
 		this.initControls();
 	}
-	draw() {
+	redraw() {
+		super.redraw();
+		this.itemsOffset = cheight / 2;
 		this.clearScreen();
 
 		// text preparations
@@ -149,20 +156,21 @@ class TitleScreen extends MenuScreen {
 
 class GamePauseScreen extends MenuScreen {
 	items = [
-		new MenuItem('CONTINUE', () => this.#gameObj.resume()),
+		new MenuItem('CONTINUE', () => this.#resume()),
 		new MenuItem('MAIN MENU', () => new TitleScreen())
 	];
-	itemsOffset = cheight / 2;
-	#gameObj;
+	#resume;
 	#score;
-	constructor (gameObj, score) {
+	constructor (resumeFn, score) {
 		super();
-		this.#gameObj = gameObj;
+		this.#resume = resumeFn;
 		this.#score = score;
-		this.draw();
+		this.redraw();
 		this.initControls();
 	}
-	draw() {
+	redraw() {
+		super.redraw();
+		this.itemsOffset = cheight / 2;
 		this.clearScreen();
 
 		ctx.textAlign = 'center';
@@ -187,15 +195,16 @@ class GameOverScreen extends MenuScreen {
 		new MenuItem('PLAY AGAIN', () => new Game()),
 		new MenuItem('MAIN MENU', () => new TitleScreen())
 	];
-	itemsOffset = cheight / 2;
 	#score;
 	constructor (score) {
 		super();
 		this.#score = score;
-		this.draw();
+		this.redraw();
 		this.initControls();
 	}
-	draw() {
+	redraw() {
+		super.redraw();
+		this.itemsOffset = cheight / 2;
 		this.clearScreen();
 
 		ctx.textAlign = 'center';
@@ -230,13 +239,11 @@ class Board {
 	constructor (w, h) {
 		this.width = w;
 		this.height = h;
-		this.tileSize = Math.floor(cwidth / this.width);
-		this.origin = new Cd(0, this.tileSize);
 	}
 	width = 20;
 	height = 19;
-	tileSize;
-	origin;
+	get tileSize() { return cwidth / this.width; }
+	get origin() { return new Cd(0, this.tileSize); }
 	wrap(cd) {
 		if (cd.x < 0) { cd.x = this.width - 1; }
 		else if (cd.x > this.width - 1) { cd.x = 0; }
@@ -246,17 +253,13 @@ class Board {
 	}
 }
 class Snake extends Array {
-	constructor (board, initDir) {
-		const startHead = new Cd(
-			Math.round(board.width / 2),
-			Math.round(board.height / 2)
-		);
-		const startTail = startHead.add(initDir.scale(-1));
-		super(startTail, startHead);
-		this.prevDir = initDir;
-		this.savedDir = initDir;
+	prevDir;
+	savedDir;
+	constructor (initHeadPos, initDir) {
+		const initTailPos = initHeadPos.add(initDir.scale(-1));
+		super(initTailPos, initHeadPos);
+		this.prevDir = this.savedDir = initDir;
 	}
-	// head is a get/set property for the cd of the snake's head
 	get head() { return this[this.length - 1] }
 	set head(cd) { this.push(cd); }
 	removeTail() { this.shift(); }
@@ -265,18 +268,16 @@ class Snake extends Array {
 		const i = this.findIndex(s => s.equals(this.head));
 		return 0 <= i && i < this.length - 1;
 	}
-	prevDir;
-	savedDir;
 }
 class Food extends Cd {
-	constructor (board, snake) {
+	constructor (game) {
 		const whitelist = [];
 
-		for (let y = 0; y < board.height; y++) {
-			for (let x = 0; x < board.width; x++) {
+		for (let y = 0; y < game.board.height; y++) {
+			for (let x = 0; x < game.board.width; x++) {
 				const cd = new Cd(x, y);
 				// as long as snake does not contain cd, add to whitelist
-				if (!snake.some(scd => scd.equals(cd))) {
+				if (!game.snake.some(scd => scd.equals(cd))) {
 					whitelist.push(cd);
 				}
 			}
@@ -288,53 +289,48 @@ class Food extends Cd {
 		super(foodCd.x, foodCd.y);
 	}
 }
-class Game {
-	constructor () {
-		this.board = new Board(20, 19);
-		this.snake = new Snake(this.board, new Cd(0, -1));
-		this.food = new Food(this.board, this.snake);
-		this.score = 0;
-
-		this.resume();
+class GameScreen extends RedrawableScreen {
+	#game;
+	constructor (game) {
+		super();
+		this.#game = game;
 	}
-	board;
-	snake;
-	food;
-	turnDelay = 350;
-	timer;
-	score;
-
+	redraw() {
+		super.redraw();
+		this.drawBoard();
+		this.drawScore();
+	}
 	drawBoard() {
-		const w = this.board.tileSize;
+		const w = this.#game.board.tileSize;
+		const o = this.#game.board.origin;
 
 		// fill with background
 		ctx.fillStyle = 'black';
 		ctx.fillRect(
-				this.board.origin.x,
-				this.board.origin.y,
-				this.board.width * w,
-				this.board.height * w
+			o.x, o.y,
+			this.#game.board.width * w,
+			this.#game.board.height * w
 		);
 
 		// draw food
-		const f = this.food;
+		const f = this.#game.food;
 		ctx.beginPath();
 		ctx.arc(
-				w * f.x + w / 2 + this.board.origin.x,
-				w * f.y + w / 2 + this.board.origin.y,
-				w / 2,
-				0, 2 * Math.PI, false
+			w * f.x + w / 2 + o.x,
+			w * f.y + w / 2 + o.y,
+			w / 2,
+			0, 2 * Math.PI, false
 		);
 		ctx.fillStyle = 'yellow';
 		ctx.fill();
 
 		// draw snake
 		ctx.beginPath();
-		this.snake.forEach(segment => {
+		this.#game.snake.forEach(segment => {
 			ctx.rect(
-					w * segment.x + this.board.origin.x,
-					w * segment.y + this.board.origin.y,
-					w, w
+				w * segment.x + o.x,
+				w * segment.y + o.y,
+				w, w
 			);
 		});
 		ctx.fillStyle = 'red';
@@ -343,14 +339,37 @@ class Game {
 	drawScore() {
 		// clear the score area
 		ctx.fillStyle = 'midnightblue';
-		ctx.fillRect(0, 0, cwidth, this.board.tileSize);
+		ctx.fillRect(0, 0, cwidth, this.#game.board.tileSize);
 
 		// print the score
 		ctx.fillStyle = 'white';
 		ctx.textAlign = 'left';
 		ctx.textBaseline = 'middle';
-		ctx.font = `bold ${this.board.tileSize - 4}px courier`;
-		ctx.fillText(`Score: ${this.score}`, 4, this.board.tileSize / 2);
+		ctx.font = `bold ${this.#game.board.tileSize - 4}px courier`;
+		ctx.fillText(`Score: ${this.#game.score}`, 4, this.#game.board.tileSize / 2);
+	}
+}
+class Game {
+	board; snake; food; screen; #timer;
+	turnDelay = 350;
+	score = 0;
+	constructor () {
+		// create board
+		this.board = new Board(20, 19);
+
+		// create snake
+		const initHead = new Cd(
+			Math.round(this.board.width / 2),
+			Math.round(this.board.height / 2)
+		);
+		this.snake = new Snake(initHead, new Cd(0, -1));
+
+		// create food
+		this.food = new Food(this);
+
+		// create screen
+		this.screen = new GameScreen(this);
+		this.resume();
 	}
 	turn() {
 		this.snake.prevDir = this.snake.savedDir;
@@ -358,8 +377,8 @@ class Game {
 		if (this.snake.head.equals(this.food)) {
 			++this.score;
 			// update score display when score changes
-			this.drawScore();
-			try { this.food = new Food(this.board, this.snake); }
+			this.screen.drawScore();
+			try { this.food = new Food(this); }
 			catch (e) {
 				this.end();
 			}
@@ -367,13 +386,13 @@ class Game {
 		else { this.snake.removeTail(); }
 
 		// draw game screen
-		this.drawBoard();
+		this.screen.drawBoard();
 
 		if (this.snake.testCollision()) { this.end(); }
 	}
 	pause() {
-		clearInterval(this.timer);
-		new GamePauseScreen(this, this.score);
+		clearInterval(this.#timer);
+		new GamePauseScreen(() => this.resume(), this.score);
 	}
 	resume() {
 		const handleDpad = (newDir) => {
@@ -392,28 +411,33 @@ class Game {
 		controls.onDpadChange = newDir => handleDpad(newDir);
 		controls.onSelectChange = newState => { if (newState === 'keydown') this.pause(); };
 
-		// draw game board
-		this.drawBoard();
-
-		// draw score header
-		this.drawScore();
+		// draw game board and score header
+		this.screen.redraw();
 
 		// start turn system
-		this.timer = setInterval(() => { this.turn(); }, this.turnDelay);
+		this.#timer = setInterval(() => this.turn(), this.turnDelay);
 	}
 	end() {
 		controls.onDpadChange = () => {};
 		controls.onSelectChange = () => {};
-		clearInterval(this.timer);
-		setTimeout(() => { new GameOverScreen(this.score); }, 1500);
+		clearInterval(this.#timer);
+		setTimeout(() => new GameOverScreen(this.score), 1500);
 	}
 }
 
 // init
-cwidth = cheight = ctx.canvas.width = ctx.canvas.height =
-Math.min(
-	document.documentElement.clientWidth,
-	document.documentElement.clientHeight
-);
+const initCanvasWH = () => {
+	cwidth = cheight = ctx.canvas.width = ctx.canvas.height =
+	Math.min(
+		document.documentElement.clientWidth,
+		document.documentElement.clientHeight
+	);
+};
+initCanvasWH();
+
+addEventListener('resize', () => {
+	initCanvasWH();
+	RedrawableScreen.curScreen.redraw();
+})
 controls = new Controls();
 new TitleScreen();
