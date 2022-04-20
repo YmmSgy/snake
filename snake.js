@@ -2,10 +2,10 @@
 
 const ctx = document.getElementById('canvas').getContext('2d');
 let cwidth, cheight;
-let controls;
 
 // controls
 class Controls {
+	static main;
 	// control states
 	#dpadState = {
 		vertical: 0,
@@ -18,6 +18,7 @@ class Controls {
 	onSelectChange = newState => {};
 
 	constructor () {
+		Controls.main = this;
 		// parses input into control events and changes control state
 		const receiveInput = (keyPressDir, key) => {
 			// translate key presses into axis changes
@@ -115,10 +116,10 @@ class MenuScreen extends RedrawableScreen {
 			this.redraw();
 		};
 
-		controls.onDpadChange = newDir => {
+		Controls.main.onDpadChange = newDir => {
 			if (newDir.vertical !== 0) nav(newDir.vertical);
 		};
-		controls.onSelectChange = newState => {
+		Controls.main.onSelectChange = newState => {
 			if (newState === 'keydown') this.items[this.cursor].onSelect();
 		};
 	}
@@ -408,8 +409,8 @@ class Game {
 			) { this.snake.savedDir = newDirCd; }
 		};
 		// init controls
-		controls.onDpadChange = newDir => handleDpad(newDir);
-		controls.onSelectChange = newState => { if (newState === 'keydown') this.pause(); };
+		Controls.main.onDpadChange = newDir => handleDpad(newDir);
+		Controls.main.onSelectChange = newState => { if (newState === 'keydown') this.pause(); };
 
 		// draw game board and score header
 		this.screen.redraw();
@@ -418,8 +419,8 @@ class Game {
 		this.#timer = setInterval(() => this.turn(), this.turnDelay);
 	}
 	end() {
-		controls.onDpadChange = () => {};
-		controls.onSelectChange = () => {};
+		Controls.main.onDpadChange = () => {};
+		Controls.main.onSelectChange = () => {};
 		clearInterval(this.#timer);
 		setTimeout(() => new GameOverScreen(this.score), 1500);
 	}
@@ -439,5 +440,5 @@ addEventListener('resize', () => {
 	initCanvasWH();
 	RedrawableScreen.curScreen.redraw();
 })
-controls = new Controls();
+new Controls();
 new TitleScreen();
