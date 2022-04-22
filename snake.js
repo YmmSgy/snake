@@ -295,9 +295,16 @@ class Food extends Cd {
 }
 class GameScreen extends RedrawableScreen {
 	#game;
+	#foodBlinkState = false;
+	#foodWidthScale = 1;
 	constructor (game) {
 		super();
 		this.#game = game;
+	}
+	blinkFood() {
+		this.#foodBlinkState = !this.#foodBlinkState;
+		if (this.#foodBlinkState) { this.#foodWidthScale = 0.8; }
+		else { this.#foodWidthScale = 1; }
 	}
 	redraw() {
 		super.redraw();
@@ -319,7 +326,7 @@ class GameScreen extends RedrawableScreen {
 		ctx.arc(
 			o.x + w / 2 + w * f.x,
 			o.y + w / 2 + w * f.y,
-			w / 2,
+			this.#foodWidthScale * 0.9 * w / 2,
 			0, 2 * Math.PI, false
 		);
 		ctx.fillStyle = 'yellow';
@@ -430,6 +437,7 @@ class Game {
 		else { this.snake.removeTail(); }
 
 		// draw game screen
+		this.screen.blinkFood();
 		this.screen.redraw();
 
 		if (this.snake.testCollision()) { this.end(); }
