@@ -232,6 +232,8 @@ class Cd {
 		this.y = y;
 	}
 	x; y;
+	get magnitude() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+	get normalised() { return new Cd(this.x / this.magnitude, this.y / this.magnitude);	}
 	equals(other) { return this.x === other.x && this.y === other.y; }
 	add(other) { return new Cd(this.x + other.x, this.y + other.y); }
 	scale(factor) { return new Cd(this.x * factor, this.y * factor); }
@@ -261,8 +263,9 @@ class Snake extends Array {
 		super(initTailPos, initHeadPos);
 		this.prevDir = this.savedDir = initDir;
 	}
-	get head() { return this[this.length - 1] }
+	get head() { return this[this.length - 1]; }
 	set head(cd) { this.push(cd); }
+	get tail() { return this[0]; }
 	removeTail() { this.shift(); }
 	testCollision() {
 		// search through the whole snake body for another instance of head
@@ -298,10 +301,7 @@ class GameScreen extends RedrawableScreen {
 	}
 	redraw() {
 		super.redraw();
-		this.drawBoard();
-		this.drawScore();
-	}
-	drawBoard() {
+
 		const w = this.#game.board.tileSize;
 		const o = this.#game.board.origin;
 
@@ -317,27 +317,72 @@ class GameScreen extends RedrawableScreen {
 		const f = this.#game.food;
 		ctx.beginPath();
 		ctx.arc(
-			w * f.x + w / 2 + o.x,
-			w * f.y + w / 2 + o.y,
+			o.x + w / 2 + w * f.x,
+			o.y + w / 2 + w * f.y,
 			w / 2,
 			0, 2 * Math.PI, false
 		);
 		ctx.fillStyle = 'yellow';
 		ctx.fill();
 
-		// draw snake
+		// draw snake body
+		const snake = this.#game.snake;
 		ctx.beginPath();
-		this.#game.snake.forEach(segment => {
-			ctx.rect(
-				w * segment.x + o.x,
-				w * segment.y + o.y,
-				w, w
-			);
-		});
+		ctx.lineWidth = 0.6 * w;
+		ctx.lineCap = 'round';
+		ctx.lineJoin = 'round';
+		ctx.strokeStyle = 'red';
+		ctx.moveTo(
+			o.x + w / 2 + w * snake[0].x,
+			o.y + w / 2 + w * snake[0].y
+		);
+		for (let i = 1; i < snake.length; i++) {
+			const delta = snake[i].add(snake[i - 1].scale(-1));
+			if (delta.magnitude === 1) {
+				// if cds are adjacent, no wrapping
+				ctx.lineTo(
+					o.x + w / 2 + w * snake[i].x,
+					o.y + w / 2 + w * snake[i].y
+				);
+			}
+			else {
+				// if cds are not adjacent, wrap
+
+				// direction of delta is opposite to real direction, as next
+				// body coordinate is wrapped across the screen
+				const oppRealDir = delta.normalised;
+				const realDir = oppRealDir.scale(-1);
+				// line to a point offscreen
+				ctx.lineTo(
+					o.x + w / 2 + w * (snake[i - 1].x + realDir.x),
+					o.y + w / 2 + w * (snake[i - 1].y + realDir.y)
+				);
+				// move to a point offscreen in the opposite direction
+				ctx.moveTo(
+					o.x + w / 2 + w * (snake[i].x + oppRealDir.x),
+					o.y + w / 2 + w * (snake[i].y + oppRealDir.y)
+				);
+				// line back to the next body coordinate within screen
+				ctx.lineTo(
+					o.x + w / 2 + w * snake[i].x,
+					o.y + w / 2 + w * snake[i].y
+				);
+			}
+			
+		}
+		ctx.stroke();
+
+		// draw snake head
+		ctx.beginPath();
+		ctx.arc(
+			o.x + w / 2 + w * snake.head.x,
+			o.y + w / 2 + w * snake.head.y,
+			w / 2,
+			0, 2 * Math.PI, false
+		);
 		ctx.fillStyle = 'red';
 		ctx.fill();
-	}
-	drawScore() {
+
 		// clear the score area
 		ctx.fillStyle = 'midnightblue';
 		ctx.fillRect(0, 0, cwidth, this.#game.board.tileSize);
@@ -377,8 +422,6 @@ class Game {
 		this.snake.head = this.board.wrap(this.snake.head.add(this.snake.savedDir));
 		if (this.snake.head.equals(this.food)) {
 			++this.score;
-			// update score display when score changes
-			this.screen.drawScore();
 			try { this.food = new Food(this); }
 			catch (e) {
 				this.end();
@@ -387,7 +430,7 @@ class Game {
 		else { this.snake.removeTail(); }
 
 		// draw game screen
-		this.screen.drawBoard();
+		this.screen.redraw();
 
 		if (this.snake.testCollision()) { this.end(); }
 	}
