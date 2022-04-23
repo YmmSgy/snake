@@ -480,7 +480,7 @@ class Game {
 // init
 const initCanvasWH = () => {
 	cwidth = cheight = ctx.canvas.width = ctx.canvas.height =
-	Math.min(
+	devicePixelRatio * Math.min(
 		document.documentElement.clientWidth,
 		document.documentElement.clientHeight
 	);
