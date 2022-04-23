@@ -12,12 +12,7 @@ class Controls {
 		horizontal: 0
 	};
 	#selectBtnState = 'keyup';
-
-	// control events
-	onDpadChange = newDir => {};
-	onSelectChange = newState => {};
-
-	constructor () {
+	constructor() {
 		Controls.main = this;
 		// parses input into control events and changes control state
 		const receiveInput = (keyPressDir, key) => {
@@ -63,18 +58,20 @@ class Controls {
 			receiveInput('keyup', e.code);
 		});
 	}
+	// control events
+	onDpadChange = newDir => {};
+	onSelectChange = newState => {};
 }
 
 // menu screen item
 class MenuItem {
 	text;
 	onSelect;
-	constructor (text, onSelectFn) {
+	constructor(text, onSelectFn) {
 		this.text = text;
 		this.onSelect = onSelectFn;
 	}
 }
-
 class RedrawableScreen {
 	static curScreen;
 	redraw() { RedrawableScreen.curScreen = this; }
@@ -124,14 +121,13 @@ class MenuScreen extends RedrawableScreen {
 		};
 	}
 }
-
 class TitleScreen extends MenuScreen {
 	items = [
 		new MenuItem('START', () => new Game()),
 		new MenuItem('HIGH SCORES', () => {}),
 		new MenuItem('OPTIONS', () => {})
 	];
-	constructor () {
+	constructor() {
 		super();
 		this.redraw();
 		this.initControls();
@@ -154,7 +150,6 @@ class TitleScreen extends MenuScreen {
 		this.drawItems();
 	}
 }
-
 class GamePauseScreen extends MenuScreen {
 	items = [
 		new MenuItem('CONTINUE', () => this.#resume()),
@@ -162,7 +157,7 @@ class GamePauseScreen extends MenuScreen {
 	];
 	#resume;
 	#score;
-	constructor (resumeFn, score) {
+	constructor(resumeFn, score) {
 		super();
 		this.#resume = resumeFn;
 		this.#score = score;
@@ -190,14 +185,13 @@ class GamePauseScreen extends MenuScreen {
 		this.drawItems();
 	}
 }
-
 class GameOverScreen extends MenuScreen {
 	items = [
 		new MenuItem('PLAY AGAIN', () => new Game()),
 		new MenuItem('MAIN MENU', () => new TitleScreen())
 	];
 	#score;
-	constructor (score) {
+	constructor(score) {
 		super();
 		this.#score = score;
 		this.redraw();
@@ -227,11 +221,11 @@ class GameOverScreen extends MenuScreen {
 
 // game
 class Cd {
-	constructor (x, y) {
+	x; y;
+	constructor(x, y) {
 		this.x = x;
 		this.y = y;
 	}
-	x; y;
 	get magnitude() { return Math.sqrt(this.x * this.x + this.y * this.y); }
 	get normalised() { return new Cd(this.x / this.magnitude, this.y / this.magnitude);	}
 	equals(other) { return this.x === other.x && this.y === other.y; }
@@ -239,12 +233,12 @@ class Cd {
 	scale(factor) { return new Cd(this.x * factor, this.y * factor); }
 }
 class Board {
-	constructor (w, h) {
+	width = 20;
+	height = 19;
+	constructor(w, h) {
 		this.width = w;
 		this.height = h;
 	}
-	width = 20;
-	height = 19;
 	get tileSize() { return cwidth / this.width; }
 	get origin() { return new Cd(0, this.tileSize); }
 	wrap(cd) {
@@ -258,7 +252,7 @@ class Board {
 class Snake extends Array {
 	prevDir;
 	savedDir;
-	constructor (initHeadPos, initDir) {
+	constructor(initHeadPos, initDir) {
 		const initTailPos = initHeadPos.add(initDir.scale(-1));
 		super(initTailPos, initHeadPos);
 		this.prevDir = this.savedDir = initDir;
@@ -274,7 +268,7 @@ class Snake extends Array {
 	}
 }
 class Food extends Cd {
-	constructor (game) {
+	constructor(game) {
 		const whitelist = [];
 
 		for (let y = 0; y < game.board.height; y++) {
@@ -297,7 +291,7 @@ class GameScreen extends RedrawableScreen {
 	#game;
 	#foodBlinkState = false;
 	#foodWidthScale = 1;
-	constructor (game) {
+	constructor(game) {
 		super();
 		this.#game = game;
 	}
@@ -406,7 +400,7 @@ class Game {
 	board; snake; food; screen; #timer;
 	turnDelay = 350;
 	score = 0;
-	constructor () {
+	constructor() {
 		// create board
 		this.board = new Board(20, 19);
 
