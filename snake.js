@@ -3,6 +3,18 @@
 const ctx = document.getElementById('canvas').getContext('2d');
 let cwidth, cheight;
 
+// global functions
+function initCanvasWH() {
+	cwidth = cheight = ctx.canvas.width = ctx.canvas.height =
+	devicePixelRatio * Math.min(
+		document.documentElement.clientWidth,
+		document.documentElement.clientHeight
+	);
+}
+function wrap(val, max) {
+	return ((val % max) + max) % max;
+}
+
 // controls
 class Controls {
 	static main;
@@ -73,6 +85,10 @@ class MenuItem {
 }
 class RedrawableScreen {
 	static curScreen;
+	clearScreen() {
+		ctx.fillStyle = 'black';
+		ctx.fillRect(0, 0, cwidth, cheight);
+	}
 	redraw() { RedrawableScreen.curScreen = this; }
 }
 
@@ -85,10 +101,6 @@ class MenuScreen extends RedrawableScreen {
 	constructor() {
 		super();
 		this.initControls();
-	}
-	clearScreen() {
-		ctx.fillStyle = 'black';
-		ctx.fillRect(0, 0, cwidth, cheight);
 	}
 	drawText(text, colour, fontSizeFrac, yPosFrac) {
 		ctx.textAlign = 'center';
@@ -115,8 +127,7 @@ class MenuScreen extends RedrawableScreen {
 	initControls() {
 		const nav = dir => {
 			// wrap cursor and change selection
-			let count = this.items.length;
-			this.cursor = (((this.cursor - dir) % count) + count) % count;
+			this.cursor = wrap(this.cursor - dir, this.items.length);
 
 			// redraw screen with new menu item highlight
 			this.redraw();
@@ -226,11 +237,7 @@ class Board {
 	get tileSize() { return cwidth / this.width; }
 	get origin() { return new Cd(0, this.tileSize); }
 	wrap(cd) {
-		if (cd.x < 0) { cd.x = this.width - 1; }
-		else if (cd.x > this.width - 1) { cd.x = 0; }
-		if (cd.y < 0) { cd.y = this.height - 1; }
-		else if (cd.y > this.height - 1) { cd.y = 0; }
-		return cd;
+		return new Cd(wrap(cd.x, this.width), wrap(cd.y, this.height));
 	}
 }
 class Snake extends Array {
@@ -290,12 +297,7 @@ class GameScreen extends RedrawableScreen {
 		const o = this.#game.board.origin;
 
 		// fill with background
-		ctx.fillStyle = 'black';
-		ctx.fillRect(
-			o.x, o.y,
-			this.#game.board.width * w,
-			this.#game.board.height * w
-		);
+		this.clearScreen();
 
 		// draw food
 		const f = this.#game.food;
@@ -455,13 +457,6 @@ class Game {
 }
 
 // init
-const initCanvasWH = () => {
-	cwidth = cheight = ctx.canvas.width = ctx.canvas.height =
-	devicePixelRatio * Math.min(
-		document.documentElement.clientWidth,
-		document.documentElement.clientHeight
-	);
-};
 initCanvasWH();
 
 addEventListener('resize', () => {
