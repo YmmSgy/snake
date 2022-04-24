@@ -81,14 +81,20 @@ class RedrawableScreen {
 class MenuScreen extends RedrawableScreen {
 	items = [];
 	cursor = 0;
-	itemsOffset;
-	itemsSpacing;
+	itemsOffsetFrac = 1/2;
+	itemsSpacingFrac = 1/12;
 	clearScreen() {
 		ctx.fillStyle = 'black';
 		ctx.fillRect(0, 0, cwidth, cheight);
 	}
+	drawText(text, colour, fontSizeFrac, yPosFrac) {
+		ctx.textAlign = 'center';
+		ctx.textBaseline = 'middle';
+		ctx.fillStyle = colour;
+		ctx.font = `bold ${fontSizeFrac * cheight}px courier`;
+		ctx.fillText(text, cwidth / 2, yPosFrac * cheight);
+	}
 	drawItems() {
-		this.itemsSpacing = cheight / 12;
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'middle';
 		ctx.font = `bold ${cheight / 20}px courier`;
@@ -99,7 +105,7 @@ class MenuScreen extends RedrawableScreen {
 			ctx.fillText(
 				this.items[i].text,
 				cwidth / 2,
-				this.itemsOffset + this.itemsSpacing * i
+				(this.itemsOffsetFrac + this.itemsSpacingFrac * i) * cheight
 			);
 		}
 	}
@@ -134,17 +140,10 @@ class TitleScreen extends MenuScreen {
 	}
 	redraw() {
 		super.redraw();
-		this.itemsOffset = cheight / 2;
 		this.clearScreen();
 
-		// text preparations
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-
 		// main title
-		ctx.fillStyle = 'white';
-		ctx.font = `bold ${cheight / 8}px courier`;
-		ctx.fillText('Snake', cwidth / 2, cheight / 5);
+		this.drawText('Snake', 'white', 1/8, 1/5);
 
 		// menu items
 		this.drawItems();
@@ -152,34 +151,27 @@ class TitleScreen extends MenuScreen {
 }
 class GamePauseScreen extends MenuScreen {
 	items = [
-		new MenuItem('CONTINUE', () => this.#resume()),
+		new MenuItem('CONTINUE', () => this.resume()),
 		new MenuItem('MAIN MENU', () => new TitleScreen())
 	];
-	#resume;
+	resume;
 	#score;
 	constructor(resumeFn, score) {
 		super();
-		this.#resume = resumeFn;
+		this.resume = resumeFn;
 		this.#score = score;
 		this.redraw();
 		this.initControls();
 	}
 	redraw() {
 		super.redraw();
-		this.itemsOffset = cheight / 2;
 		this.clearScreen();
 
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-
 		// print paused
-		ctx.fillStyle = 'white';
-		ctx.font = `bold ${cheight / 10}px courier`;
-		ctx.fillText('Paused', cwidth / 2, cheight / 5);
+		this.drawText('Paused', 'white', 1/10, 1/5);
 
 		// print score
-		ctx.font = `bold ${cheight / 20}px courier`;
-		ctx.fillText(`Score: ${this.#score}`, cwidth / 2, cheight / 3);
+		this.drawText(`Score: ${this.#score}`, 'white', 1/20, 1/3);
 
 		// print items
 		this.drawItems();
@@ -199,20 +191,13 @@ class GameOverScreen extends MenuScreen {
 	}
 	redraw() {
 		super.redraw();
-		this.itemsOffset = cheight / 2;
 		this.clearScreen();
 
-		ctx.textAlign = 'center';
-		ctx.textBaseline = 'middle';
-
 		// print game over
-		ctx.fillStyle = 'white';
-		ctx.font = `bold ${cheight / 10}px courier`;
-		ctx.fillText('Game Over', cwidth / 2, cheight / 5);
+		this.drawText('Game Over', 'white', 1/10, 1/5);
 
 		// print score
-		ctx.font = `bold ${cheight / 20}px courier`;
-		ctx.fillText(`Score: ${this.#score}`, cwidth / 2, cheight / 3);
+		this.drawText(`Score: ${this.#score}`, 'white', 1/20, 1/3);
 
 		// print items
 		this.drawItems();
