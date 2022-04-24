@@ -65,8 +65,7 @@ class Controls {
 
 // menu screen item
 class MenuItem {
-	text;
-	onSelect;
+	text; onSelect;
 	constructor(text, onSelectFn) {
 		this.text = text;
 		this.onSelect = onSelectFn;
@@ -83,6 +82,10 @@ class MenuScreen extends RedrawableScreen {
 	cursor = 0;
 	itemsOffsetFrac = 1/2;
 	itemsSpacingFrac = 1/12;
+	constructor() {
+		super();
+		this.initControls();
+	}
 	clearScreen() {
 		ctx.fillStyle = 'black';
 		ctx.fillRect(0, 0, cwidth, cheight);
@@ -136,7 +139,6 @@ class TitleScreen extends MenuScreen {
 	constructor() {
 		super();
 		this.redraw();
-		this.initControls();
 	}
 	redraw() {
 		super.redraw();
@@ -154,14 +156,12 @@ class GamePauseScreen extends MenuScreen {
 		new MenuItem('CONTINUE', () => this.resume()),
 		new MenuItem('MAIN MENU', () => new TitleScreen())
 	];
-	resume;
-	#score;
+	resume; #score;
 	constructor(resumeFn, score) {
 		super();
 		this.resume = resumeFn;
 		this.#score = score;
 		this.redraw();
-		this.initControls();
 	}
 	redraw() {
 		super.redraw();
@@ -187,7 +187,6 @@ class GameOverScreen extends MenuScreen {
 		super();
 		this.#score = score;
 		this.redraw();
-		this.initControls();
 	}
 	redraw() {
 		super.redraw();
@@ -235,8 +234,7 @@ class Board {
 	}
 }
 class Snake extends Array {
-	prevDir;
-	savedDir;
+	prevDir; savedDir;
 	constructor(initHeadPos, initDir) {
 		const initTailPos = initHeadPos.add(initDir.scale(-1));
 		super(initTailPos, initHeadPos);
