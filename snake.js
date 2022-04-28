@@ -100,7 +100,13 @@ class MenuScreen extends RedrawableScreen {
 	itemsSpacingFrac = 1/12;
 	constructor() {
 		super();
-		this.initControls();
+		Controls.main.onDpadChange = newDir => {
+			this.navCursor(newDir);
+			this.redraw();
+		};
+		Controls.main.onSelectChange = newState => {
+			if (newState === 'keydown') this.items[this.cursor].onSelect();
+		};
 	}
 	drawText(text, colour, fontSizeFrac, yPosFrac) {
 		ctx.textAlign = 'center';
@@ -124,21 +130,9 @@ class MenuScreen extends RedrawableScreen {
 			);
 		}
 	}
-	initControls() {
-		const nav = dir => {
-			// wrap cursor and change selection
-			this.cursor = wrap(this.cursor - dir, this.items.length);
-
-			// redraw screen with new menu item highlight
-			this.redraw();
-		};
-
-		Controls.main.onDpadChange = newDir => {
-			if (newDir.vertical !== 0) nav(newDir.vertical);
-		};
-		Controls.main.onSelectChange = newState => {
-			if (newState === 'keydown') this.items[this.cursor].onSelect();
-		};
+	navCursor(newDir) {
+		if (newDir.vertical === 0) return;
+		this.cursor = wrap(this.cursor - newDir.vertical, this.items.length);
 	}
 }
 class TitleScreen extends MenuScreen {
