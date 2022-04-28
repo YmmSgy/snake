@@ -77,9 +77,11 @@ class Controls {
 
 // menu screen item
 class MenuItem {
-	text; onSelect;
+	#text;
+	get text() { return this.#text; }
+	onSelect = () => {};
 	constructor(text, onSelectFn) {
-		this.text = text;
+		this.#text = text;
 		this.onSelect = onSelectFn;
 	}
 }
@@ -94,8 +96,10 @@ class RedrawableScreen {
 
 // menu screens
 class MenuScreen extends RedrawableScreen {
-	items = [];
-	cursor = 0;
+	#cursor = 0; items = [];
+	get cursor() { return this.#cursor; }
+	set cursor(v) { this.#cursor = wrap(v, this.items.length); }
+	get cursorItem() { return this.items[this.cursor]; }
 	itemsOffsetFrac = 1/2;
 	itemsSpacingFrac = 1/12;
 	constructor() {
@@ -105,7 +109,7 @@ class MenuScreen extends RedrawableScreen {
 			this.redraw();
 		};
 		Controls.main.onSelectChange = newState => {
-			if (newState === 'keydown') this.items[this.cursor].onSelect();
+			if (newState === 'keydown') this.cursorItem.onSelect();
 		};
 	}
 	drawText(text, colour, fontSizeFrac, yPosFrac) {
@@ -132,7 +136,7 @@ class MenuScreen extends RedrawableScreen {
 	}
 	navCursor(newDir) {
 		if (newDir.vertical === 0) return;
-		this.cursor = wrap(this.cursor - newDir.vertical, this.items.length);
+		this.cursor += -newDir.vertical;
 	}
 }
 class TitleScreen extends MenuScreen {
