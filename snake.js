@@ -11,8 +11,8 @@ function initCanvasWH() {
 		document.documentElement.clientHeight
 	);
 }
-function wrap(val, max) {
-	return ((val % max) + max) % max;
+function wrap(val, count) {
+	return ((val % count) + count) % count;
 }
 
 // controls
