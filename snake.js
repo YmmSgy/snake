@@ -211,12 +211,12 @@ class GameOverScreen extends MenuScreen {
 // game
 class Cd {
 	x; y;
+	get magnitude() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+	get normalised() { return new Cd(this.x / this.magnitude, this.y / this.magnitude);	}
 	constructor(x, y) {
 		this.x = x;
 		this.y = y;
 	}
-	get magnitude() { return Math.sqrt(this.x * this.x + this.y * this.y); }
-	get normalised() { return new Cd(this.x / this.magnitude, this.y / this.magnitude);	}
 	equals(other) { return this.x === other.x && this.y === other.y; }
 	add(other) { return new Cd(this.x + other.x, this.y + other.y); }
 	scale(factor) { return new Cd(this.x * factor, this.y * factor); }
@@ -224,26 +224,26 @@ class Cd {
 class Board {
 	width = 20;
 	height = 19;
+	get tileSize() { return cwidth / this.width; }
+	get origin() { return new Cd(0, this.tileSize); }
 	constructor(w, h) {
 		this.width = w;
 		this.height = h;
 	}
-	get tileSize() { return cwidth / this.width; }
-	get origin() { return new Cd(0, this.tileSize); }
 	wrap(cd) {
 		return new Cd(wrap(cd.x, this.width), wrap(cd.y, this.height));
 	}
 }
 class Snake extends Array {
 	prevDir; savedDir;
+	get head() { return this[this.length - 1]; }
+	set head(cd) { this.push(cd); }
+	get tail() { return this[0]; }
 	constructor(initHeadPos, initDir) {
 		const initTailPos = initHeadPos.add(initDir.scale(-1));
 		super(initTailPos, initHeadPos);
 		this.prevDir = this.savedDir = initDir;
 	}
-	get head() { return this[this.length - 1]; }
-	set head(cd) { this.push(cd); }
-	get tail() { return this[0]; }
 	removeTail() { this.shift(); }
 	testCollision() {
 		// search through the whole snake body for another instance of head
