@@ -124,9 +124,7 @@ class MenuScreen extends RedrawableScreen {
 		ctx.textBaseline = 'middle';
 		ctx.font = `bold ${cheight / 20}px courier`;
 		for (let i = 0; i < this.items.length; i++) {
-			if (i === this.cursor) { ctx.fillStyle = 'white'; }
-			else { ctx.fillStyle = 'gray'; }
-
+			ctx.fillStyle = i === this.cursor ? 'white' : 'gray';
 			ctx.fillText(
 				this.items[i].text,
 				cwidth / 2,
