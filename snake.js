@@ -319,6 +319,7 @@ class GameScreen extends RedrawableScreen {
 			o.x + w / 2 + w * snake[0].x,
 			o.y + w / 2 + w * snake[0].y
 		);
+		// connect the dots to draw snake
 		for (let i = 1; i < snake.length; i++) {
 			const delta = snake[i].add(snake[i - 1].scale(-1));
 			if (delta.magnitude === 1) {
