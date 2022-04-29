@@ -224,12 +224,14 @@ class Cd {
 	add(other) { return new Cd(this.x + other.x, this.y + other.y); }
 	scale(factor) { return new Cd(this.x * factor, this.y * factor); }
 }
-class Board {
+class Board extends Cd {
 	width = 20;
 	height = 19;
 	get tileSize() { return cwidth / this.width; }
-	get origin() { return new Cd(0, this.tileSize); }
+	get scoreHeight() { return this.tileSize * (this.width - this.height); }
+	get origin() { return new Cd(0, this.scoreHeight); }
 	constructor(w, h) {
+		super(w, h);
 		this.width = w;
 		this.height = h;
 	}
@@ -368,14 +370,17 @@ class GameScreen extends RedrawableScreen {
 
 		// clear the score area
 		ctx.fillStyle = 'midnightblue';
-		ctx.fillRect(0, 0, cwidth, this.#game.board.tileSize);
+		ctx.fillRect(0, 0, cwidth, this.#game.board.scoreHeight);
 
 		// print the score
 		ctx.fillStyle = 'white';
 		ctx.textAlign = 'left';
 		ctx.textBaseline = 'middle';
-		ctx.font = `bold ${this.#game.board.tileSize - 4}px courier`;
-		ctx.fillText(`Score: ${this.#game.score}`, 4, this.#game.board.tileSize / 2);
+		ctx.font = `bold ${this.#game.board.scoreHeight - 4}px courier`;
+		ctx.fillText(
+			`Score: ${this.#game.score}`,
+			4, this.#game.board.scoreHeight / 2
+		);
 	}
 }
 class Game {
