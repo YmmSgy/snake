@@ -140,7 +140,7 @@ class TitleScreen extends MenuScreen {
 	items = [
 		new MenuItem('START', () => new Game()),
 		new MenuItem('HIGH SCORES', () => {}),
-		new MenuItem('OPTIONS', () => {})
+		new MenuItem('OPTIONS', () => new OptionsScreen())
 	];
 	constructor() {
 		super();
@@ -206,6 +206,71 @@ class GameOverScreen extends MenuScreen {
 
 		// print items
 		this.drawItems();
+	}
+}
+class OptionsItem extends MenuItem {
+	#label; field;
+	get text() { return this.#label + this.field.curChoice.text; }
+	constructor(label, optionsField, onSelectFn) {
+		super(label, onSelectFn);
+		this.#label = label;
+		this.field = optionsField;
+	}
+}
+class OptionsScreen extends MenuScreen {
+	items = [
+		new OptionsItem('Game Speed: ', GameOptions.main.turnDelayField, () => {}),
+		new OptionsItem('Board Size: ', GameOptions.main.boardField, () => {}),
+		new OptionsItem('Back', GameOptionField.empty, () => new TitleScreen())
+	];
+	constructor() {
+		super();
+		Controls.main.onDpadChange = newDir => {
+			if (newDir.vertical === 0 && newDir.horizontal === 0) return;
+			this.navCursor(newDir.vertical);
+			this.navSubCursor(newDir.horizontal);
+			this.redraw();
+		};
+		this.redraw();
+	}
+	navSubCursor(horiDir) { this.cursorItem.field.curIndex += horiDir; }
+	redraw() {
+		super.redraw();
+		this.clearScreen();
+		this.drawText('Options', 'white', 1/10, 1/5);
+		this.drawItems();
+	}
+}
+class GameOptionField {
+	static empty = new GameOptionField(0, [{text:'',value:null}]);
+	#curIndex; choices;
+	get curIndex() { return this.#curIndex; }
+	set curIndex(v) { this.#curIndex = wrap(v, this.choices.length); }
+	get curChoice() { return this.choices[this.#curIndex]; }
+	constructor(initIndex, choices) {
+		this.#curIndex = initIndex;
+		this.choices = choices;
+	}
+}
+class GameOptions {
+	static main;
+	turnDelayField; boardField;
+	constructor() {
+		GameOptions.main = this;
+		this.turnDelayField = new GameOptionField(2, [
+			{ text: '>....', value: 500 },
+			{ text: '>>...', value: 400 },
+			{ text: '>>>..', value: 300 },
+			{ text: '>>>>.', value: 200 },
+			{ text: '>>>>>', value: 100 }
+		]);
+		this.boardField = new GameOptionField(2, [
+			{ text: '#....', value: new Board(10, 9) },
+			{ text: '##...', value: new Board(15, 14) },
+			{ text: '###..', value: new Board(20, 19) },
+			{ text: '####.', value: new Board(40, 38) },
+			{ text: '#####', value: new Board(80, 76) }
+		]);
 	}
 }
 
@@ -383,12 +448,11 @@ class GameScreen extends RedrawableScreen {
 	}
 }
 class Game {
-	board; snake; food; screen; #timer;
-	turnDelay = 350;
+	board; turnDelay; snake; food; screen; #timer;
 	score = 0;
 	constructor() {
-		// create board
-		this.board = new Board(20, 19);
+		this.turnDelay = GameOptions.main.turnDelayField.curChoice.value;
+		this.board = GameOptions.main.boardField.curChoice.value;
 
 		// create snake
 		const initHead = new Cd(
@@ -464,5 +528,6 @@ addEventListener('resize', () => {
 	initCanvasWH();
 	RedrawableScreen.curScreen.redraw();
 })
+new GameOptions();
 new Controls();
 new TitleScreen();
