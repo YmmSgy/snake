@@ -106,7 +106,8 @@ class MenuScreen extends RedrawableScreen {
 	constructor() {
 		super();
 		Controls.main.onDpadChange = newDir => {
-			this.navCursor(newDir);
+			if (newDir.vertical === 0) return;
+			this.navCursor(newDir.vertical);
 			this.redraw();
 		};
 		Controls.main.onSelectChange = newState => {
@@ -133,10 +134,7 @@ class MenuScreen extends RedrawableScreen {
 			);
 		}
 	}
-	navCursor(newDir) {
-		if (newDir.vertical === 0) return;
-		this.cursor += -newDir.vertical;
-	}
+	navCursor(vertDir) { this.cursor += -vertDir; }
 }
 class TitleScreen extends MenuScreen {
 	items = [
