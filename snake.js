@@ -12,6 +12,7 @@ function initCanvasWH() {
 	);
 }
 function wrap(val, count) {
+	if (count === 0) throw new Error('cannot wrap around 0');
 	return ((val % count) + count) % count;
 }
 
