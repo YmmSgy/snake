@@ -76,7 +76,17 @@ class Controls {
 	onSelectChange = newState => {};
 }
 
-// menu screen item
+// screens
+// screen that can survive screen refreshes
+class RedrawableScreen {
+	static curScreen;
+	clearScreen() {
+		ctx.fillStyle = 'black';
+		ctx.fillRect(0, 0, cwidth, cheight);
+	}
+	redraw() { RedrawableScreen.curScreen = this; }
+}
+// selectable item in a MenuScreen
 class MenuItem {
 	#text;
 	get text() { return this.#text; }
@@ -86,16 +96,7 @@ class MenuItem {
 		this.onSelect = onSelectFn;
 	}
 }
-class RedrawableScreen {
-	static curScreen;
-	clearScreen() {
-		ctx.fillStyle = 'black';
-		ctx.fillRect(0, 0, cwidth, cheight);
-	}
-	redraw() { RedrawableScreen.curScreen = this; }
-}
-
-// menu screens
+// screen with selectable items
 class MenuScreen extends RedrawableScreen {
 	#cursor = 0; items = [];
 	get cursor() { return this.#cursor; }
@@ -208,6 +209,7 @@ class GameOverScreen extends MenuScreen {
 		this.drawItems();
 	}
 }
+// selectable and tunable item in an OptionsScreen
 class OptionsItem extends MenuItem {
 	#label; field;
 	get text() { return this.#label + this.field.curChoice.text; }
@@ -239,104 +241,6 @@ class OptionsScreen extends MenuScreen {
 		this.clearScreen();
 		this.drawText('Options', 'white', 1/10, 1/5);
 		this.drawItems();
-	}
-}
-class GameOptionField {
-	static empty = new GameOptionField(0, [{text:'',value:null}]);
-	#curIndex; choices;
-	get curIndex() { return this.#curIndex; }
-	set curIndex(v) { this.#curIndex = wrap(v, this.choices.length); }
-	get curChoice() { return this.choices[this.#curIndex]; }
-	constructor(initIndex, choices) {
-		this.#curIndex = initIndex;
-		this.choices = choices;
-	}
-}
-class GameOptions {
-	static main;
-	turnDelayField; boardField;
-	constructor() {
-		GameOptions.main = this;
-		this.turnDelayField = new GameOptionField(2, [
-			{ text: '>....', value: 500 },
-			{ text: '>>...', value: 400 },
-			{ text: '>>>..', value: 300 },
-			{ text: '>>>>.', value: 200 },
-			{ text: '>>>>>', value: 100 }
-		]);
-		this.boardField = new GameOptionField(2, [
-			{ text: '#....', value: new Board(10, 9) },
-			{ text: '##...', value: new Board(15, 14) },
-			{ text: '###..', value: new Board(20, 19) },
-			{ text: '####.', value: new Board(40, 38) },
-			{ text: '#####', value: new Board(80, 76) }
-		]);
-	}
-}
-
-// game
-class Cd {
-	x; y;
-	get magnitude() { return Math.sqrt(this.x * this.x + this.y * this.y); }
-	get normalised() { return new Cd(this.x / this.magnitude, this.y / this.magnitude);	}
-	constructor(x, y) {
-		this.x = x;
-		this.y = y;
-	}
-	equals(other) { return this.x === other.x && this.y === other.y; }
-	add(other) { return new Cd(this.x + other.x, this.y + other.y); }
-	scale(factor) { return new Cd(this.x * factor, this.y * factor); }
-}
-class Board extends Cd {
-	width = 20;
-	height = 19;
-	get tileSize() { return cwidth / this.width; }
-	get scoreHeight() { return this.tileSize * (this.width - this.height); }
-	get origin() { return new Cd(0, this.scoreHeight); }
-	constructor(w, h) {
-		super(w, h);
-		this.width = w;
-		this.height = h;
-	}
-	wrap(cd) {
-		return new Cd(wrap(cd.x, this.width), wrap(cd.y, this.height));
-	}
-}
-class Snake extends Array {
-	prevDir; savedDir;
-	get head() { return this[this.length - 1]; }
-	set head(cd) { this.push(cd); }
-	get tail() { return this[0]; }
-	constructor(initHeadPos, initDir) {
-		const initTailPos = initHeadPos.add(initDir.scale(-1));
-		super(initTailPos, initHeadPos);
-		this.prevDir = this.savedDir = initDir;
-	}
-	removeTail() { this.shift(); }
-	testCollision() {
-		// search through the whole snake body for another instance of head
-		const i = this.findIndex(s => s.equals(this.head));
-		return 0 <= i && i < this.length - 1;
-	}
-}
-class Food extends Cd {
-	constructor(game) {
-		const whitelist = [];
-
-		for (let y = 0; y < game.board.height; y++) {
-			for (let x = 0; x < game.board.width; x++) {
-				const cd = new Cd(x, y);
-				// as long as snake does not contain cd, add to whitelist
-				if (!game.snake.some(scd => scd.equals(cd))) {
-					whitelist.push(cd);
-				}
-			}
-		}
-
-		if (whitelist.length === 0) throw new Error('no tiles left to generate food');
-
-		const foodCd = whitelist[Math.floor(Math.random() * whitelist.length)];
-		super(foodCd.x, foodCd.y);
 	}
 }
 class GameScreen extends RedrawableScreen {
@@ -445,6 +349,107 @@ class GameScreen extends RedrawableScreen {
 			`Score: ${this.#game.score}`,
 			4, this.#game.board.scoreHeight / 2
 		);
+	}
+}
+
+// options
+// collection of option choices and the selected choice
+class GameOptionField {
+	static empty = new GameOptionField(0, [{text:'',value:null}]);
+	#curIndex; choices;
+	get curIndex() { return this.#curIndex; }
+	set curIndex(v) { this.#curIndex = wrap(v, this.choices.length); }
+	get curChoice() { return this.choices[this.#curIndex]; }
+	constructor(initIndex, choices) {
+		this.#curIndex = initIndex;
+		this.choices = choices;
+	}
+}
+class GameOptions {
+	static main;
+	turnDelayField; boardField;
+	constructor() {
+		GameOptions.main = this;
+		this.turnDelayField = new GameOptionField(2, [
+			{ text: '>....', value: 500 },
+			{ text: '>>...', value: 400 },
+			{ text: '>>>..', value: 300 },
+			{ text: '>>>>.', value: 200 },
+			{ text: '>>>>>', value: 100 }
+		]);
+		this.boardField = new GameOptionField(2, [
+			{ text: '#....', value: new Board(10, 9) },
+			{ text: '##...', value: new Board(15, 14) },
+			{ text: '###..', value: new Board(20, 19) },
+			{ text: '####.', value: new Board(40, 38) },
+			{ text: '#####', value: new Board(80, 76) }
+		]);
+	}
+}
+
+// game
+class Cd {
+	x; y;
+	get magnitude() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+	get normalised() { return new Cd(this.x / this.magnitude, this.y / this.magnitude);	}
+	constructor(x, y) {
+		this.x = x;
+		this.y = y;
+	}
+	equals(other) { return this.x === other.x && this.y === other.y; }
+	add(other) { return new Cd(this.x + other.x, this.y + other.y); }
+	scale(factor) { return new Cd(this.x * factor, this.y * factor); }
+}
+class Board extends Cd {
+	width = 20;
+	height = 19;
+	get tileSize() { return cwidth / this.width; }
+	get scoreHeight() { return this.tileSize * (this.width - this.height); }
+	get origin() { return new Cd(0, this.scoreHeight); }
+	constructor(w, h) {
+		super(w, h);
+		this.width = w;
+		this.height = h;
+	}
+	wrap(cd) {
+		return new Cd(wrap(cd.x, this.width), wrap(cd.y, this.height));
+	}
+}
+class Snake extends Array {
+	prevDir; savedDir;
+	get head() { return this[this.length - 1]; }
+	set head(cd) { this.push(cd); }
+	get tail() { return this[0]; }
+	constructor(initHeadPos, initDir) {
+		const initTailPos = initHeadPos.add(initDir.scale(-1));
+		super(initTailPos, initHeadPos);
+		this.prevDir = this.savedDir = initDir;
+	}
+	removeTail() { this.shift(); }
+	testCollision() {
+		// search through the whole snake body for another instance of head
+		const i = this.findIndex(s => s.equals(this.head));
+		return 0 <= i && i < this.length - 1;
+	}
+}
+class Food extends Cd {
+	constructor(game) {
+		const whitelist = [];
+
+		for (let y = 0; y < game.board.height; y++) {
+			for (let x = 0; x < game.board.width; x++) {
+				const cd = new Cd(x, y);
+				// as long as snake does not contain cd, add to whitelist
+				if (!game.snake.some(scd => scd.equals(cd))) {
+					whitelist.push(cd);
+				}
+			}
+		}
+
+		if (whitelist.length === 0) throw new Error('no tiles left to generate food');
+
+		const foodCd = whitelist[Math.floor(Math.random() * whitelist.length)];
+		super(foodCd.x, foodCd.y);
 	}
 }
 class Game {
