@@ -28,35 +28,35 @@ class Controls {
 	constructor() {
 		Controls.main = this;
 		// parses input into control events and changes control state
-		const receiveInput = (keyPressDir, key) => {
+		const receiveInput = e => {
 			// translate key presses into axis changes
 			const btnToAxis = (axis, limit) => {
-				if (keyPressDir === 'keydown') {
+				if (e.type === 'keydown') {
 					if (this.#dpadState[axis] === limit) return;
 					this.#dpadState[axis] += limit;
 				}
-				else if (keyPressDir === 'keyup') {
+				else if (e.type === 'keyup') {
 					if (this.#dpadState[axis] === -limit) return;
 					this.#dpadState[axis] -= limit;
 				}
 				else {
-					throw new Error('invalid keyPressDir');
+					throw new Error('invalid key event type');
 				}
 				// fire the payload event stored in .onDpadChange()
 				this.onDpadChange(this.#dpadState);
 			};
 
 			// determine which control changed and fire corresponding event
-			switch (key) {
+			switch (e.code) {
 				case 'KeyW': btnToAxis('vertical', 1); break;
 				case 'KeyA': btnToAxis('horizontal', -1); break;
 				case 'KeyS': btnToAxis('vertical', -1); break;
 				case 'KeyD': btnToAxis('horizontal', 1); break;
 				case 'Space':
-					if (keyPressDir !== this.#selectBtnState) {
-						this.#selectBtnState = keyPressDir;
+					if (e.type !== this.#selectBtnState) {
+						this.#selectBtnState = e.type;
 						// fire the payload event stored in .onSelectChange()
-						this.onSelectChange(keyPressDir);
+						this.onSelectChange(e.type);
 					}
 					break;
 				default:
@@ -65,10 +65,10 @@ class Controls {
 
 		// register for keyboard events
 		document.addEventListener('keydown', e => {
-			if (!e.repeat) receiveInput('keydown', e.code);
+			if (!e.repeat) receiveInput(e);
 		});
 		document.addEventListener('keyup', e => {
-			receiveInput('keyup', e.code);
+			receiveInput(e);
 		});
 	}
 	// control events
@@ -244,13 +244,8 @@ class OptionsScreen extends MenuScreen {
 	}
 }
 class GameScreen extends RedrawableScreen {
-	#game;
 	#foodBlinkState = false;
 	#foodWidthScale = 1;
-	constructor(game) {
-		super();
-		this.#game = game;
-	}
 	blinkFood() {
 		this.#foodBlinkState = !this.#foodBlinkState;
 		if (this.#foodBlinkState) { this.#foodWidthScale = 0.8; }
@@ -259,14 +254,14 @@ class GameScreen extends RedrawableScreen {
 	redraw() {
 		super.redraw();
 
-		const w = this.#game.board.tileSize;
-		const o = this.#game.board.origin;
+		const w = Game.main.board.tileSize;
+		const o = Game.main.board.origin;
 
 		// fill with background
 		this.clearScreen();
 
 		// draw food
-		const f = this.#game.food;
+		const f = Game.main.food;
 		ctx.beginPath();
 		ctx.arc(
 			o.x + w / 2 + w * f.x,
@@ -278,7 +273,7 @@ class GameScreen extends RedrawableScreen {
 		ctx.fill();
 
 		// draw snake body
-		const snake = this.#game.snake;
+		const snake = Game.main.snake;
 		ctx.beginPath();
 		ctx.lineWidth = 0.6 * w;
 		ctx.lineCap = 'round';
@@ -338,16 +333,16 @@ class GameScreen extends RedrawableScreen {
 
 		// clear the score area
 		ctx.fillStyle = 'midnightblue';
-		ctx.fillRect(0, 0, cwidth, this.#game.board.scoreHeight);
+		ctx.fillRect(0, 0, cwidth, Game.main.board.scoreHeight);
 
 		// print the score
 		ctx.fillStyle = 'white';
 		ctx.textAlign = 'left';
 		ctx.textBaseline = 'middle';
-		ctx.font = `bold ${this.#game.board.scoreHeight - 4}px courier`;
+		ctx.font = `bold ${Game.main.board.scoreHeight - 4}px courier`;
 		ctx.fillText(
-			`Score: ${this.#game.score}`,
-			4, this.#game.board.scoreHeight / 2
+			`Score: ${Game.main.score}`,
+			4, Game.main.board.scoreHeight / 2
 		);
 	}
 }
@@ -433,14 +428,14 @@ class Snake extends Array {
 	}
 }
 class Food extends Cd {
-	constructor(game) {
+	constructor() {
 		const whitelist = [];
 
-		for (let y = 0; y < game.board.height; y++) {
-			for (let x = 0; x < game.board.width; x++) {
+		for (let y = 0; y < Game.main.board.height; y++) {
+			for (let x = 0; x < Game.main.board.width; x++) {
 				const cd = new Cd(x, y);
 				// as long as snake does not contain cd, add to whitelist
-				if (!game.snake.some(scd => scd.equals(cd))) {
+				if (!Game.main.snake.some(scd => scd.equals(cd))) {
 					whitelist.push(cd);
 				}
 			}
@@ -453,9 +448,13 @@ class Food extends Cd {
 	}
 }
 class Game {
+	static main;
 	board; turnDelay; snake; food; screen; #timer;
 	score = 0;
 	constructor() {
+		Game.main = this;
+
+		// import game options
 		this.turnDelay = GameOptions.main.turnDelayField.curChoice.value;
 		this.board = GameOptions.main.boardField.curChoice.value;
 
@@ -467,10 +466,10 @@ class Game {
 		this.snake = new Snake(initHead, new Cd(0, -1));
 
 		// create food
-		this.food = new Food(this);
+		this.food = new Food();
 
 		// create screen
-		this.screen = new GameScreen(this);
+		this.screen = new GameScreen();
 		this.resume();
 	}
 	turn() {
